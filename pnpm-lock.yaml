@@ -24,6 +24,22 @@ importers:
         specifier: ^4.1.0
         version: 4.1.8(@types/node@22.19.20)(vite@7.3.5(@types/node@22.19.20))
 
+  packages/domain:
+    dependencies:
+      '@traceguard/event-ledger':
+        specifier: workspace:*
+        version: link:../event-ledger
+      '@traceguard/policy-engine':
+        specifier: workspace:*
+        version: link:../policy-engine
+      '@traceguard/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      '@traceguard/testing-fixtures':
+        specifier: workspace:*
+        version: link:../testing-fixtures
+
   packages/event-ledger:
     dependencies:
       '@traceguard/schemas':
