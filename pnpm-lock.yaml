@@ -21,6 +21,12 @@ importers:
         specifier: ^4.1.0
         version: 4.1.8(vite@7.3.5)
 
+  packages/event-ledger:
+    dependencies:
+      '@traceguard/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+
   packages/schemas:
     dependencies:
       zod:
