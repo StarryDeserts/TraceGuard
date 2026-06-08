@@ -30,6 +30,52 @@ const input: ActionDigestInput = {
   executionAdapter: "simulator",
 };
 
+const materialFieldChanges = [
+  ["workspaceId", { ...input, workspaceId: "ws_2" }],
+  ["runId", { ...input, runId: "run_2" }],
+  ["decisionId", { ...input, decisionId: "dec_2" }],
+  ["providerConnectionId", { ...input, providerConnectionId: "pc_2" }],
+  ["toolName", { ...input, toolName: "cancel_order" }],
+  ["toolManifestHash", { ...input, toolManifestHash: "tmh_2" }],
+  ["policyVersionId", { ...input, policyVersionId: "pv_2" }],
+  ["workspaceMode", { ...input, workspaceMode: "autonomous_mode" }],
+  ["instrument", { ...input, instrument: "ETHUSDT" }],
+  ["marketType", { ...input, marketType: "spot" }],
+  ["action", { ...input, action: "close_long" }],
+  ["requestedNotionalUsdt", { ...input, requestedNotionalUsdt: "301" }],
+  ["requestedQuantity", { ...input, requestedQuantity: "0.02" }],
+  ["requestedLeverage", { ...input, requestedLeverage: "3" }],
+  ["orderType", { ...input, orderType: "market" }],
+  ["limitPrice", { ...input, limitPrice: "65001.50" }],
+  ["stopLoss", { ...input, stopLoss: "62000" }],
+  ["takeProfit", { ...input, takeProfit: "70000" }],
+  ["marketSnapshotRef", { ...input, marketSnapshotRef: "snap_2" }],
+  ["executionAdapter", { ...input, executionAdapter: "bitget_live" }],
+] satisfies Array<readonly [keyof ActionDigestInput, ActionDigestInput]>;
+
+const materialFields = [
+  "workspaceId",
+  "runId",
+  "decisionId",
+  "providerConnectionId",
+  "toolName",
+  "toolManifestHash",
+  "policyVersionId",
+  "workspaceMode",
+  "instrument",
+  "marketType",
+  "action",
+  "requestedNotionalUsdt",
+  "requestedQuantity",
+  "requestedLeverage",
+  "orderType",
+  "limitPrice",
+  "stopLoss",
+  "takeProfit",
+  "marketSnapshotRef",
+  "executionAdapter",
+] satisfies Array<keyof ActionDigestInput>;
+
 describe("computeActionDigest", () => {
   it("is stable under object key reordering", () => {
     const reordered: ActionDigestInput = {
@@ -57,16 +103,25 @@ describe("computeActionDigest", () => {
     expect(computeActionDigest(reordered, sha256hex)).toBe(computeActionDigest(input, sha256hex));
   });
 
-  it("changes when a material field changes", () => {
-    expect(computeActionDigest({ ...input, requestedNotionalUsdt: "301" }, sha256hex)).not.toBe(
-      computeActionDigest(input, sha256hex),
-    );
-    expect(computeActionDigest({ ...input, executionAdapter: "bitget_live" }, sha256hex)).not.toBe(
-      computeActionDigest(input, sha256hex),
-    );
+  it("changes when any material field changes", () => {
+    expect(materialFieldChanges.map(([field]) => field)).toEqual(materialFields);
+
+    const baseDigest = computeActionDigest(input, sha256hex);
+    for (const [field, changedInput] of materialFieldChanges) {
+      expect(computeActionDigest(changedInput, sha256hex), field).not.toBe(baseDigest);
+    }
   });
 
   it("validates ActionDigestInput before hashing", () => {
-    expect(() => computeActionDigest({ ...input, requestedNotionalUsdt: 300 } as unknown as ActionDigestInput, sha256hex)).toThrow();
+    let hashCalls = 0;
+    const hashShouldNotRun = () => {
+      hashCalls += 1;
+      throw new Error("hash should not run for invalid action digest input");
+    };
+
+    expect(() =>
+      computeActionDigest({ ...input, requestedNotionalUsdt: 300 } as unknown as ActionDigestInput, hashShouldNotRun),
+    ).toThrow();
+    expect(hashCalls).toBe(0);
   });
 });
