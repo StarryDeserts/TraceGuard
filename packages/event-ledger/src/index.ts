@@ -3,3 +3,4 @@ export * from "./hashing.js";
 export * from "./clock-id.js";
 export * from "./make-event.js";
 export * from "./ledger-store.js";
+export * from "./run-status-projection.js";
