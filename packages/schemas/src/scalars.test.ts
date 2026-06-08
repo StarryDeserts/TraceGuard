@@ -19,9 +19,11 @@ describe("IsoTimestamp", () => {
   it("accepts ISO-8601 UTC instants", () => {
     expect(IsoTimestamp.parse("2026-06-08T00:00:00.000Z")).toBe("2026-06-08T00:00:00.000Z");
   });
-  it("rejects non-UTC or malformed", () => {
+  it("rejects non-UTC, malformed, or impossible dates", () => {
     expect(() => IsoTimestamp.parse("2026-06-08")).toThrow();
     expect(() => IsoTimestamp.parse("2026-06-08T00:00:00+02:00")).toThrow();
+    expect(() => IsoTimestamp.parse("2026-99-99T99:99:99Z")).toThrow();
+    expect(() => IsoTimestamp.parse("2026-02-30T00:00:00Z")).toThrow();
   });
 });
 
@@ -30,5 +32,11 @@ describe("PrefixedId", () => {
     const DecisionId = PrefixedId("dec");
     expect(DecisionId.parse("dec_01")).toBe("dec_01");
     expect(() => DecisionId.parse("evt_01")).toThrow();
+  });
+
+  it("treats regex metacharacters in prefixes literally", () => {
+    const DottedId = PrefixedId("a.b");
+    expect(DottedId.parse("a.b_1")).toBe("a.b_1");
+    expect(() => DottedId.parse("axb_1")).toThrow();
   });
 });
