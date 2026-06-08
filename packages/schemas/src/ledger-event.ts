@@ -84,4 +84,13 @@ export const LedgerEvent = z
     eventHash: z.string().min(1),
     redactionProfile: RedactionProfile.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((event, ctx) => {
+    if (!Object.prototype.hasOwnProperty.call(event, "payload")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "payload is required",
+        path: ["payload"],
+      });
+    }
+  });

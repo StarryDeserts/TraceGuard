@@ -21,6 +21,12 @@ describe("LedgerEvent", () => {
   it("accepts a minimal event without previousEventHash", () => {
     expect(LedgerEvent.parse(base).eventHash).toBe("h2");
   });
+  it("rejects an event without a payload key", () => {
+    const eventWithoutPayload: Partial<typeof base> = { ...base };
+    delete eventWithoutPayload.payload;
+
+    expect(() => LedgerEvent.parse(eventWithoutPayload)).toThrow();
+  });
   it("accepts an event with previousEventHash and runId", () => {
     expect(LedgerEvent.parse({ ...base, previousEventHash: "h0", runId: "run_1" }).previousEventHash).toBe("h0");
   });
