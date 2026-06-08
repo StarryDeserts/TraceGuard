@@ -24,4 +24,29 @@ describe("Policy AST", () => {
   it("rejects an unknown condition kind", () => {
     expect(() => Condition.parse({ kind: "wat", value: "1" })).toThrow();
   });
+
+  it("accepts decimal strings and rejects numbers for every financial comparator", () => {
+    const financialConditionKinds = [
+      "notional_lt",
+      "notional_lte",
+      "notional_eq",
+      "notional_gte",
+      "notional_gt",
+      "quantity_lt",
+      "quantity_lte",
+      "quantity_eq",
+      "quantity_gte",
+      "quantity_gt",
+      "leverage_lt",
+      "leverage_lte",
+      "leverage_eq",
+      "leverage_gte",
+      "leverage_gt",
+    ] as const;
+
+    for (const kind of financialConditionKinds) {
+      expect(Condition.safeParse({ kind, value: "123.45" }).success).toBe(true);
+      expect(Condition.safeParse({ kind, value: 123.45 }).success).toBe(false);
+    }
+  });
 });
