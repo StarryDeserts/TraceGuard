@@ -19,9 +19,9 @@ const context: EvaluationContext = {
   policyVersionId: "pv_1",
   evaluatorVersion: "policy-engine@1.0.0",
   workspaceMode: "approval_mode",
-  manifestStatus: "active",
+  manifestStatus: "approved",
   snapshotAgeSeconds: 10,
-  toolRiskClass: "trade",
+  toolRiskClass: "trade_like",
   instrumentAllowlist: ["BTCUSDT"],
 };
 

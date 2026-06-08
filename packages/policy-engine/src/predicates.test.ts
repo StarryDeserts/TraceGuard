@@ -20,9 +20,9 @@ const context: EvaluationContext = {
   policyVersionId: "pv_1",
   evaluatorVersion: "policy-engine@1.0.0",
   workspaceMode: "approval_mode",
-  manifestStatus: "active",
+  manifestStatus: "approved",
   snapshotAgeSeconds: 30,
-  toolRiskClass: "trade",
+  toolRiskClass: "trade_like",
   instrumentAllowlist: ["BTCUSDT"],
 };
 
@@ -80,8 +80,8 @@ describe("evaluateCondition", () => {
 
   it("matches context predicates", () => {
     expect(evaluateCondition({ kind: "workspace_mode_eq", value: "approval_mode" }, envelope, context).matched).toBe(true);
-    expect(evaluateCondition({ kind: "manifest_status_eq", value: "active" }, envelope, context).matched).toBe(true);
+    expect(evaluateCondition({ kind: "manifest_status_eq", value: "approved" }, envelope, context).matched).toBe(true);
     expect(evaluateCondition({ kind: "snapshot_age_gt", seconds: 10 }, envelope, context).matched).toBe(true);
-    expect(evaluateCondition({ kind: "tool_risk_class_eq", value: "trade" }, envelope, context).matched).toBe(true);
+    expect(evaluateCondition({ kind: "tool_risk_class_eq", value: "trade_like" }, envelope, context).matched).toBe(true);
   });
 });

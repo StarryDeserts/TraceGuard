@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Policy, Condition, EvaluationContext } from "./policy.js";
+import { Policy, Condition, EvaluationContext, WorkspaceMode, ManifestStatus, ToolRiskClass } from "./policy.js";
 
 describe("Policy AST", () => {
   it("accepts a policy with a default-deny and one rule", () => {
@@ -56,11 +56,52 @@ describe("Policy AST", () => {
       policyVersionId: "pv_1",
       evaluatorVersion: "policy-engine@1.0.0",
       workspaceMode: "approval_mode",
-      manifestStatus: "active",
+      manifestStatus: "approved",
       snapshotAgeSeconds: 12,
-      toolRiskClass: "trade",
+      toolRiskClass: "trade_like",
       instrumentAllowlist: ["BTCUSDT"],
     });
     expect(ctx.policyVersionId).toBe("pv_1");
+  });
+
+  it("accepts only canonical context enum values", () => {
+    expect(WorkspaceMode.parse("safe_demo")).toBe("safe_demo");
+    expect(WorkspaceMode.parse("approval_mode")).toBe("approval_mode");
+    expect(WorkspaceMode.parse("guarded_autopilot")).toBe("guarded_autopilot");
+    expect(WorkspaceMode.parse("locked_investigation")).toBe("locked_investigation");
+
+    expect(ManifestStatus.parse("approved")).toBe("approved");
+    expect(ManifestStatus.parse("needs_review")).toBe("needs_review");
+    expect(ManifestStatus.parse("frozen")).toBe("frozen");
+    expect(ManifestStatus.parse("blocked")).toBe("blocked");
+
+    expect(ToolRiskClass.parse("public_read")).toBe("public_read");
+    expect(ToolRiskClass.parse("account_read")).toBe("account_read");
+    expect(ToolRiskClass.parse("trade_like")).toBe("trade_like");
+    expect(ToolRiskClass.parse("asset_movement")).toBe("asset_movement");
+    expect(ToolRiskClass.parse("administrative")).toBe("administrative");
+    expect(ToolRiskClass.parse("unknown")).toBe("unknown");
+  });
+
+  it("rejects non-canonical evaluation context values", () => {
+    const baseContext = {
+      runId: "run_1",
+      policyVersionId: "pv_1",
+      evaluatorVersion: "policy-engine@1.0.0",
+      workspaceMode: "approval_mode",
+      manifestStatus: "approved",
+      snapshotAgeSeconds: 12,
+      toolRiskClass: "trade_like",
+      instrumentAllowlist: ["BTCUSDT"],
+    };
+
+    expect(EvaluationContext.safeParse({ ...baseContext, manifestStatus: "active" }).success).toBe(false);
+    expect(EvaluationContext.safeParse({ ...baseContext, toolRiskClass: "trade" }).success).toBe(false);
+  });
+
+  it("rejects conditions with non-canonical context values", () => {
+    expect(Condition.safeParse({ kind: "manifest_status_eq", value: "active" }).success).toBe(false);
+    expect(Condition.safeParse({ kind: "tool_risk_class_eq", value: "trade" }).success).toBe(false);
+    expect(Condition.safeParse({ kind: "workspace_mode_eq", value: "paper" }).success).toBe(false);
   });
 });

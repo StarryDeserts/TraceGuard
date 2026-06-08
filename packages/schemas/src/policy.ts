@@ -3,6 +3,22 @@ import { DecimalString } from "./scalars.js";
 import { DecisionAction, MarketType } from "./decision-envelope.js";
 import { Effect } from "./event-payloads.js";
 
+export const WorkspaceMode = z.enum(["safe_demo", "approval_mode", "guarded_autopilot", "locked_investigation"]);
+export type WorkspaceMode = z.infer<typeof WorkspaceMode>;
+
+export const ManifestStatus = z.enum(["approved", "needs_review", "frozen", "blocked"]);
+export type ManifestStatus = z.infer<typeof ManifestStatus>;
+
+export const ToolRiskClass = z.enum([
+  "public_read",
+  "account_read",
+  "trade_like",
+  "asset_movement",
+  "administrative",
+  "unknown",
+]);
+export type ToolRiskClass = z.infer<typeof ToolRiskClass>;
+
 export const Condition = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("action_in"), values: z.array(DecisionAction).min(1) }).strict(),
   z.object({ kind: z.literal("instrument_in"), values: z.array(z.string().min(1)).min(1) }).strict(),
@@ -22,10 +38,10 @@ export const Condition = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("leverage_eq"), value: DecimalString }).strict(),
   z.object({ kind: z.literal("leverage_gte"), value: DecimalString }).strict(),
   z.object({ kind: z.literal("leverage_gt"), value: DecimalString }).strict(),
-  z.object({ kind: z.literal("workspace_mode_eq"), value: z.string().min(1) }).strict(),
-  z.object({ kind: z.literal("manifest_status_eq"), value: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal("workspace_mode_eq"), value: WorkspaceMode }).strict(),
+  z.object({ kind: z.literal("manifest_status_eq"), value: ManifestStatus }).strict(),
   z.object({ kind: z.literal("snapshot_age_gt"), seconds: z.number().int().nonnegative() }).strict(),
-  z.object({ kind: z.literal("tool_risk_class_eq"), value: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal("tool_risk_class_eq"), value: ToolRiskClass }).strict(),
 ]);
 export type Condition = z.infer<typeof Condition>;
 
@@ -34,10 +50,10 @@ export const EvaluationContext = z
     runId: z.string().min(1),
     policyVersionId: z.string().min(1),
     evaluatorVersion: z.string().min(1),
-    workspaceMode: z.string().min(1),
-    manifestStatus: z.string().min(1),
+    workspaceMode: WorkspaceMode,
+    manifestStatus: ManifestStatus,
     snapshotAgeSeconds: z.number().int().nonnegative(),
-    toolRiskClass: z.string().min(1),
+    toolRiskClass: ToolRiskClass,
     instrumentAllowlist: z.array(z.string().min(1)),
   })
   .strict();

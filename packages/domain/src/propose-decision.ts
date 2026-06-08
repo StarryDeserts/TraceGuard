@@ -96,6 +96,18 @@ function materialDecision(envelope: DecisionEnvelopeType): MaterialDecision {
   return material;
 }
 
+function isTradeOrExecutionAction(envelope: DecisionEnvelopeType): boolean {
+  return envelope.action !== "hold" && envelope.action !== "abstain";
+}
+
+function isMissingRequestedAmount(envelope: DecisionEnvelopeType): boolean {
+  return (
+    isTradeOrExecutionAction(envelope) &&
+    envelope.requestedNotionalUsdt === undefined &&
+    envelope.requestedQuantity === undefined
+  );
+}
+
 function optionalEnvelopeFields(envelope: DecisionEnvelopeType): Partial<DecisionProposedPayload> {
   return {
     ...(envelope.confidence !== undefined ? { confidence: envelope.confidence } : {}),
@@ -193,6 +205,20 @@ export function proposeDecision(args: ProposeDecisionArgs, deps: ProposeDecision
   const decisionHash = deps.hash(canonicalJson(material));
 
   emit("DecisionProposed", "agent", proposedPayload(envelope, args.context.runId, decisionHash));
+
+  if (isMissingRequestedAmount(envelope)) {
+    emit(
+      "DecisionRejected",
+      "system",
+      rejectionPayload(args.context.runId, envelope.id, "missing_required_field", [
+        {
+          path: "requestedNotionalUsdt",
+          message: "requestedNotionalUsdt or requestedQuantity is required for trade/execution actions",
+        },
+      ]),
+    );
+    return { decision: failClosedDecision(), events };
+  }
 
   if (envelope.evidenceRefs.length === 0) {
     emit(

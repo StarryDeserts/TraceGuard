@@ -3,6 +3,7 @@ import { sha256hex, verifyChain } from "@traceguard/event-ledger";
 import {
   allowDecisionEnvelope,
   allowPolicy,
+  approvalPolicy,
   fixedClock,
   missingEvidenceEnvelope,
   sampleActorId,
@@ -59,6 +60,39 @@ describe("proposeDecision", () => {
     expect(result.decision).toEqual({ outcome: "block", matchedRules: [] });
     expect(result.events.map((e) => e.eventType)).toEqual(["DecisionProposed", "DecisionRejected"]);
     expect(result.events[1]!.payload).toMatchObject({ reasonCode: "missing_evidence" });
+    expect(() => verifyChain(result.events)).not.toThrow();
+  });
+
+  it("rejects trade decisions missing both requested notional and quantity before policy evaluation", () => {
+    const result = proposeDecision(
+      {
+        workspaceId: sampleWorkspaceId,
+        actorId: sampleActorId,
+        envelope: {
+          ...allowDecisionEnvelope,
+          id: "dec_missing_amount",
+          requestedNotionalUsdt: undefined,
+          requestedQuantity: undefined,
+        },
+        policy: approvalPolicy,
+        context: sampleEvaluationContext,
+        previousEventHash: null,
+      },
+      deps(),
+    );
+
+    expect(result.decision).toEqual({ outcome: "block", matchedRules: [] });
+    expect(result.events.map((e) => e.eventType)).toEqual(["DecisionProposed", "DecisionRejected"]);
+    expect(result.events.map((e) => e.eventType)).not.toContain("PolicyEvaluated");
+    expect(result.events[1]!.payload).toMatchObject({
+      reasonCode: "missing_required_field",
+      validationErrors: [
+        {
+          path: "requestedNotionalUsdt",
+          message: "requestedNotionalUsdt or requestedQuantity is required for trade/execution actions",
+        },
+      ],
+    });
     expect(() => verifyChain(result.events)).not.toThrow();
   });
 
