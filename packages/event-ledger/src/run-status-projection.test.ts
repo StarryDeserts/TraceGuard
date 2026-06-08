@@ -21,24 +21,43 @@ function ev(eventType: string, payload: unknown = {}): LedgerEvent {
 }
 
 describe("runStatusProjection", () => {
-  it("defaults to created and ignores DecisionProposed", () => {
-    expect(runStatusProjection([ev("DecisionProposed")])).toBe("created");
+  it("defaults empty event streams to created", () => {
+    expect(runStatusProjection([])).toBe("created");
   });
-  it("folds a full allow flow to allowed", () => {
-    expect(
-      runStatusProjection([
-        ev("DecisionProposed"),
-        ev("DecisionValidated"),
-        ev("PolicyEvaluationStarted"),
-        ev("PolicyEvaluated", { outcome: "allow" }),
-      ]),
-    ).toBe("allowed");
+
+  it("maps RunCreated to created", () => {
+    expect(runStatusProjection([ev("RunCreated")])).toBe("created");
   });
-  it("maps require_approval and block outcomes", () => {
+
+  it("maps RunStarted to capturing", () => {
+    expect(runStatusProjection([ev("RunStarted")])).toBe("capturing");
+  });
+
+  it("maps DecisionValidated to decision_ready", () => {
+    expect(runStatusProjection([ev("DecisionValidated")])).toBe("decision_ready");
+  });
+
+  it("maps PolicyEvaluationStarted to policy_evaluating", () => {
+    expect(runStatusProjection([ev("PolicyEvaluationStarted")])).toBe("policy_evaluating");
+  });
+
+  it("maps explicit PolicyEvaluated outcomes", () => {
+    expect(runStatusProjection([ev("PolicyEvaluated", { outcome: "allow" })])).toBe("allowed");
     expect(runStatusProjection([ev("PolicyEvaluated", { outcome: "require_approval" })])).toBe("approval_required");
     expect(runStatusProjection([ev("PolicyEvaluated", { outcome: "block" })])).toBe("blocked");
   });
-  it("leaves a rejected decision at created (never advances)", () => {
-    expect(runStatusProjection([ev("DecisionProposed"), ev("DecisionRejected")])).toBe("created");
+
+  it("leaves an already advanced status unchanged for DecisionRejected", () => {
+    expect(runStatusProjection([ev("DecisionValidated"), ev("DecisionRejected")])).toBe("decision_ready");
+  });
+
+  it("leaves an already advanced status unchanged for invalid PolicyEvaluated outcomes", () => {
+    expect(runStatusProjection([ev("DecisionValidated"), ev("PolicyEvaluated", { outcome: "deny" })])).toBe(
+      "decision_ready",
+    );
+    expect(runStatusProjection([ev("DecisionValidated"), ev("PolicyEvaluated", {})])).toBe("decision_ready");
+    expect(runStatusProjection([ev("DecisionValidated"), ev("PolicyEvaluated", { outcome: "future" })])).toBe(
+      "decision_ready",
+    );
   });
 });

@@ -1,4 +1,4 @@
-import type { LedgerEvent, RunStatus, PolicyEvaluatedPayload } from "@traceguard/schemas";
+import type { LedgerEvent, RunStatus } from "@traceguard/schemas";
 
 export function runStatusProjection(events: LedgerEvent[]): RunStatus {
   let status: RunStatus = "created";
@@ -17,13 +17,18 @@ export function runStatusProjection(events: LedgerEvent[]): RunStatus {
         status = "policy_evaluating";
         break;
       case "PolicyEvaluated": {
-        const outcome = (e.payload as PolicyEvaluatedPayload).outcome;
-        status =
-          outcome === "allow"
-            ? "allowed"
-            : outcome === "require_approval"
-              ? "approval_required"
-              : "blocked";
+        const payload = e.payload;
+        const outcome =
+          payload !== null && typeof payload === "object" && "outcome" in payload
+            ? (payload as { outcome?: unknown }).outcome
+            : undefined;
+        if (outcome === "allow") {
+          status = "allowed";
+        } else if (outcome === "require_approval") {
+          status = "approval_required";
+        } else if (outcome === "block") {
+          status = "blocked";
+        }
         break;
       }
       default:
