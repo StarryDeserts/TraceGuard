@@ -2,7 +2,7 @@
   "name": "traceguard",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=22.12.0" },
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc --build --pretty",
