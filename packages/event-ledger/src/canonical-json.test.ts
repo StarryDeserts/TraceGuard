@@ -11,6 +11,11 @@ describe("canonicalJson", () => {
   it("drops undefined values", () => {
     expect(canonicalJson({ a: 1, b: undefined })).toBe('{"a":1}');
   });
+  it("preserves __proto__ as a canonical JSON key", () => {
+    const input = JSON.parse('{"__proto__":{"x":1},"a":2}');
+
+    expect(canonicalJson(input)).toBe('{"__proto__":{"x":1},"a":2}');
+  });
   it("keeps null and preserves array order", () => {
     expect(canonicalJson({ a: null, xs: [3, 1, 2] })).toBe('{"a":null,"xs":[3,1,2]}');
   });
