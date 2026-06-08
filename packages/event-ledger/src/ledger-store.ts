@@ -46,6 +46,10 @@ function recompute(e: LedgerEvent): string {
   });
 }
 
+function cloneEvent(e: LedgerEvent): LedgerEvent {
+  return structuredClone(e);
+}
+
 export function verifyChain(events: LedgerEvent[], startHead: string | null = null): void {
   let prev = startHead;
   for (const e of events) {
@@ -86,12 +90,12 @@ export class InMemoryLedgerStore implements LedgerStore {
       throw new LedgerConflictError(expectedHead, currentHead);
     }
     verifyChain(events, currentHead);
-    this.byWorkspace.set(workspaceId, [...list, ...events]);
+    this.byWorkspace.set(workspaceId, [...list, ...events.map(cloneEvent)]);
   }
 
   async read(workspaceId: string, runId?: string): Promise<LedgerEvent[]> {
     const list = this.byWorkspace.get(workspaceId) ?? [];
-    const copy = [...list];
-    return runId === undefined ? copy : copy.filter((e) => e.runId === runId);
+    const events = runId === undefined ? list : list.filter((e) => e.runId === runId);
+    return events.map(cloneEvent);
   }
 }

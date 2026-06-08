@@ -77,6 +77,47 @@ describe("InMemoryLedgerStore", () => {
     expect(await store.read("ws_other")).toHaveLength(0);
   });
 
+  it("does not let original event mutations change stored events after append", async () => {
+    const store = new InMemoryLedgerStore();
+    const [event] = chainOf(null, 1, idGen());
+    await store.append(null, [event!]);
+    const originalHash = event!.eventHash;
+
+    (event!.payload as { i: number }).i = 999;
+    event!.eventHash = "tampered";
+
+    const [stored] = await store.read("ws_1");
+    expect(stored!.payload).toEqual({ i: 0 });
+    expect(stored!.eventHash).toBe(originalHash);
+  });
+
+  it("does not let read result mutations affect later reads or head", async () => {
+    const store = new InMemoryLedgerStore();
+    const [event] = chainOf(null, 1, idGen());
+    await store.append(null, [event!]);
+    const originalHead = await store.head("ws_1");
+
+    const [readEvent] = await store.read("ws_1");
+    (readEvent!.payload as { i: number }).i = 999;
+    readEvent!.eventHash = "tampered";
+
+    expect(await store.head("ws_1")).toBe(originalHead);
+    const [stored] = await store.read("ws_1");
+    expect(stored!.payload).toEqual({ i: 0 });
+    expect(stored!.eventHash).toBe(originalHead);
+  });
+
+  it("fresh reads still verify after a returned event is tampered", async () => {
+    const store = new InMemoryLedgerStore();
+    await store.append(null, chainOf(null, 2, idGen()));
+
+    const readResult = await store.read("ws_1");
+    (readResult[1]!.payload as { i: number }).i = 999;
+    expect(() => verifyChain(readResult)).toThrow(LedgerIntegrityError);
+    const freshRead = await store.read("ws_1");
+    expect(() => verifyChain(freshRead)).not.toThrow();
+  });
+
   it("verifyChain catches a tampered payload", async () => {
     const events = chainOf(null, 2, idGen());
     expect(() => verifyChain(events)).not.toThrow();
