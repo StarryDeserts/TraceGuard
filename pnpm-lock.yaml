@@ -30,6 +30,12 @@ importers:
         specifier: workspace:*
         version: link:../schemas
 
+  packages/policy-engine:
+    dependencies:
+      '@traceguard/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+
   packages/schemas:
     dependencies:
       zod:

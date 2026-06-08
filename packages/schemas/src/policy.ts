@@ -29,6 +29,20 @@ export const Condition = z.discriminatedUnion("kind", [
 ]);
 export type Condition = z.infer<typeof Condition>;
 
+export const EvaluationContext = z
+  .object({
+    runId: z.string().min(1),
+    policyVersionId: z.string().min(1),
+    evaluatorVersion: z.string().min(1),
+    workspaceMode: z.string().min(1),
+    manifestStatus: z.string().min(1),
+    snapshotAgeSeconds: z.number().int().nonnegative(),
+    toolRiskClass: z.string().min(1),
+    instrumentAllowlist: z.array(z.string().min(1)),
+  })
+  .strict();
+export type EvaluationContext = z.infer<typeof EvaluationContext>;
+
 export const Rule = z
   .object({
     id: z.string().min(1),

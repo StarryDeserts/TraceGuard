@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Policy, Condition } from "./policy.js";
+import { Policy, Condition, EvaluationContext } from "./policy.js";
 
 describe("Policy AST", () => {
   it("accepts a policy with a default-deny and one rule", () => {
@@ -48,5 +48,19 @@ describe("Policy AST", () => {
       expect(Condition.safeParse({ kind, value: "123.45" }).success).toBe(true);
       expect(Condition.safeParse({ kind, value: 123.45 }).success).toBe(false);
     }
+  });
+
+  it("accepts the evaluation context needed by predicates and event payloads", () => {
+    const ctx = EvaluationContext.parse({
+      runId: "run_1",
+      policyVersionId: "pv_1",
+      evaluatorVersion: "policy-engine@1.0.0",
+      workspaceMode: "approval_mode",
+      manifestStatus: "active",
+      snapshotAgeSeconds: 12,
+      toolRiskClass: "trade",
+      instrumentAllowlist: ["BTCUSDT"],
+    });
+    expect(ctx.policyVersionId).toBe("pv_1");
   });
 });
