@@ -16,6 +16,12 @@ export function runStatusProjection(events: LedgerEvent[]): RunStatus {
       case "PolicyEvaluationStarted":
         status = "policy_evaluating";
         break;
+      case "ApprovalRequested":
+        status = "approval_required";
+        break;
+      case "ApprovalApproved":
+        status = "approval_required";
+        break;
       case "PolicyEvaluated": {
         const payload = e.payload;
         const outcome =

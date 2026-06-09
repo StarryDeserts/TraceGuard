@@ -60,4 +60,17 @@ describe("runStatusProjection", () => {
       "decision_ready",
     );
   });
+
+  it("maps ApprovalRequested and ApprovalApproved to approval_required", () => {
+    expect(runStatusProjection([ev("ApprovalRequested")])).toBe("approval_required");
+    expect(runStatusProjection([ev("ApprovalApproved")])).toBe("approval_required");
+  });
+
+  it("leaves run status unchanged for AuthorizationIssued / ApprovalRejected / ApprovalExpired", () => {
+    expect(runStatusProjection([ev("PolicyEvaluated", { outcome: "allow" }), ev("AuthorizationIssued")])).toBe(
+      "allowed",
+    );
+    expect(runStatusProjection([ev("ApprovalRequested"), ev("ApprovalRejected")])).toBe("approval_required");
+    expect(runStatusProjection([ev("ApprovalRequested"), ev("ApprovalExpired")])).toBe("approval_required");
+  });
 });
