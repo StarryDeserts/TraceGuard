@@ -6,3 +6,4 @@ export * from "./policy.js";
 export * from "./action-digest-input.js";
 export * from "./run-status.js";
 export * from "./approval-payloads.js";
+export * from "./authorization-payloads.js";
