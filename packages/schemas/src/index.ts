@@ -5,3 +5,4 @@ export * from "./event-payloads.js";
 export * from "./policy.js";
 export * from "./action-digest-input.js";
 export * from "./run-status.js";
+export * from "./approval-payloads.js";
