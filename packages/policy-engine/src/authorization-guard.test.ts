@@ -96,6 +96,31 @@ describe("evaluateAuthorizationUse", () => {
     ).toEqual({ ok: false, reasonCode: "expired_authorization" });
   });
 
+  it("clock-expiry beats consumed: a consumed authorization past its deadline reports expired_authorization", () => {
+    // `status` is a single enum, but expiry has two independent sources: the explicit
+    // "expired" status OR the clock (now >= expiresAt). A consumed authorization whose
+    // deadline has also passed must surface expiry, not consumption, because the clock-expiry
+    // check runs before the consumed check. (The precedence test above only weighed expiry
+    // against mismatch/gates, never against a consumed status.)
+    expect(
+      evaluateAuthorizationUse(
+        input({
+          authorization: { ...baseAuthorization, status: "consumed", expiresAt: "2026-06-08T00:00:00.000Z" },
+          now: "2026-06-08T09:00:00.000Z",
+        }),
+      ),
+    ).toEqual({ ok: false, reasonCode: "expired_authorization" });
+    // Converse pins the boundary: consumed but still within the deadline reports already_consumed.
+    expect(
+      evaluateAuthorizationUse(
+        input({
+          authorization: { ...baseAuthorization, status: "consumed", expiresAt: "2026-06-08T00:05:00.000Z" },
+          now: "2026-06-08T00:01:00.000Z",
+        }),
+      ),
+    ).toEqual({ ok: false, reasonCode: "already_consumed" });
+  });
+
   it("property: total — never throws on arbitrary input and always returns a boolean ok", () => {
     const statusArb = fc.constantFrom("issued", "consumed", "expired", "revoked");
     const tsArb = fc.constantFrom(
