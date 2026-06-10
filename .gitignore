@@ -20,3 +20,9 @@ coverage/
 
 # Windows / WSL download artifacts
 *:Zone.Identifier
+
+# CodeGraph local index (machine-local, rebuilt on demand)
+.codegraph/
+
+# Claude Code session continuation dumps
+*-this-session-is-being-continued-from-a-previous-c.txt
