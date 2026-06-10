@@ -119,7 +119,7 @@ describe("ExecutionUnknownPayload", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/schemas test -- execution-payloads`
+Run: `pnpm test execution-payloads`
 Expected: FAIL — cannot find module `./execution-payloads.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -226,7 +226,7 @@ export * from "./execution-payloads.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/schemas test -- execution-payloads`
+Run: `pnpm test execution-payloads`
 Expected: PASS (all 5 tests).
 
 - [ ] **Step 6: Commit**
@@ -282,7 +282,7 @@ describe("RunFailedPayload", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/schemas test -- run-payloads`
+Run: `pnpm test run-payloads`
 Expected: FAIL — cannot find module `./run-payloads.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -325,7 +325,7 @@ export * from "./run-payloads.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/schemas test -- run-payloads`
+Run: `pnpm test run-payloads`
 Expected: PASS (2 tests).
 
 - [ ] **Step 6: Commit**
@@ -369,7 +369,7 @@ describe("ApprovalRevokedPayload", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/schemas test -- approval-payloads`
+Run: `pnpm test approval-payloads`
 Expected: FAIL — `ApprovalRevokedPayload` is not exported.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -390,7 +390,7 @@ export type ApprovalRevokedPayload = z.infer<typeof ApprovalRevokedPayload>;
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/schemas test -- approval-payloads`
+Run: `pnpm test approval-payloads`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -462,8 +462,8 @@ export * from "./execution-adapter.js";
 
 - [ ] **Step 3: Verify it typechecks**
 
-Run: `pnpm --filter @traceguard/domain typecheck`
-Expected: PASS (no type errors).
+Run: `pnpm typecheck` (root script = `tsc --build`; there is no per-package `typecheck` script — `pnpm --filter ... typecheck` is a silent no-op).
+Expected: PASS (no type errors across the workspace).
 
 - [ ] **Step 4: Commit**
 
@@ -591,7 +591,7 @@ describe("authorizeExecution", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/domain test -- execution-transitions`
+Run: `pnpm test execution-transitions`
 Expected: FAIL — cannot find module `./execution-transitions.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -818,7 +818,7 @@ export * from "./execution-transitions.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/domain test -- execution-transitions`
+Run: `pnpm test execution-transitions`
 Expected: PASS (4 tests).
 
 - [ ] **Step 6: Commit**
@@ -894,7 +894,7 @@ describe("settleExecution", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/domain test -- execution-transitions`
+Run: `pnpm test execution-transitions`
 Expected: FAIL — `settleExecution` is not exported.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -987,7 +987,7 @@ export function settleExecution(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/domain test -- execution-transitions`
+Run: `pnpm test execution-transitions`
 Expected: PASS (6 tests total).
 
 - [ ] **Step 5: Commit**
@@ -1084,7 +1084,7 @@ describe("authorizationProjection", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- authorization-projection`
+Run: `pnpm test authorization-projection`
 Expected: FAIL — cannot find module `./authorization-projection.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1154,7 +1154,7 @@ export * from "./authorization-projection.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- authorization-projection`
+Run: `pnpm test authorization-projection`
 Expected: PASS (6 tests).
 
 - [ ] **Step 6: Commit**
@@ -1225,7 +1225,7 @@ describe("runStatusProjection — execution lifecycle", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- run-status-projection`
+Run: `pnpm test run-status-projection`
 Expected: FAIL — e.g. `ExecutionRequested` falls through to the default and the status assertion fails.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1258,7 +1258,7 @@ In `packages/event-ledger/src/run-status-projection.ts`, add these cases inside 
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- run-status-projection`
+Run: `pnpm test run-status-projection`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1308,7 +1308,7 @@ describe("SystemIdGen", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- system-clock`
+Run: `pnpm test system-clock`
 Expected: FAIL — cannot find module `./system-clock.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1342,7 +1342,7 @@ export * from "./system-clock.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/event-ledger test -- system-clock`
+Run: `pnpm test system-clock`
 Expected: PASS (2 tests).
 
 - [ ] **Step 6: Commit**
@@ -1402,7 +1402,7 @@ describe("samples", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/testing-fixtures test -- execution-samples`
+Run: `pnpm test execution-samples`
 Expected: FAIL — cannot find module `./execution-samples.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1448,7 +1448,7 @@ export * from "./execution-samples.js";
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/testing-fixtures test -- execution-samples`
+Run: `pnpm test execution-samples`
 Expected: PASS (4 tests).
 
 - [ ] **Step 6: Commit**
@@ -1465,10 +1465,9 @@ git commit -m "test(testing-fixtures): add execution samples and fake-live/crash
 **Files:**
 - Create: `packages/runtime/package.json`
 - Create: `packages/runtime/tsconfig.json`
-- Create: `packages/runtime/vitest.config.ts`
 - Modify: `tsconfig.json` (root — add the project reference)
 
-This task wires an empty package into the workspace so later tasks can add source. No tests yet; the gate is `pnpm install` succeeding and the workspace recognising the package.
+This task wires an empty package into the workspace so later tasks can add source. No tests yet; the gate is `pnpm install` succeeding and the workspace recognising the package. No per-package `vitest.config.ts` is needed: every sibling package (domain, event-ledger, testing-fixtures, policy-engine) relies on the single root `vitest.config.ts`, whose `include` glob (`packages/*/src/**/*.test.ts`) already covers `packages/runtime`.
 
 - [ ] **Step 1: Create `packages/runtime/package.json`**
 
@@ -1506,25 +1505,7 @@ This task wires an empty package into the workspace so later tasks can add sourc
 }
 ```
 
-- [ ] **Step 3: Create `packages/runtime/vitest.config.ts`**
-
-Mirror an existing package's vitest config. First check what a sibling uses:
-
-Run: `cat packages/domain/vitest.config.ts`
-
-Then create `packages/runtime/vitest.config.ts` with the same content (typically):
-
-```ts
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-  test: { include: ["src/**/*.test.ts"] },
-});
-```
-
-If the sibling config differs, copy the sibling's content verbatim instead.
-
-- [ ] **Step 4: Add the root project reference**
+- [ ] **Step 3: Add the root project reference**
 
 In the root `tsconfig.json`, add to the `references` array (after the `domain` entry):
 
@@ -1532,7 +1513,7 @@ In the root `tsconfig.json`, add to the `references` array (after the `domain` e
     { "path": "./packages/runtime" }
 ```
 
-- [ ] **Step 5: Install and verify the workspace resolves the package**
+- [ ] **Step 4: Install and verify the workspace resolves the package**
 
 Run: `pnpm install`
 Expected: completes; `@traceguard/runtime` linked into the workspace.
@@ -1540,10 +1521,10 @@ Expected: completes; `@traceguard/runtime` linked into the workspace.
 Run: `pnpm --filter @traceguard/runtime exec true`
 Expected: exits 0 (the filter matches the new package).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add packages/runtime/package.json packages/runtime/tsconfig.json packages/runtime/vitest.config.ts tsconfig.json pnpm-lock.yaml
+git add packages/runtime/package.json packages/runtime/tsconfig.json tsconfig.json pnpm-lock.yaml
 git commit -m "chore(runtime): scaffold execution runtime package"
 ```
 
@@ -1593,7 +1574,7 @@ describe("createSimulatorAdapter", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/runtime test -- simulator-adapter`
+Run: `pnpm test simulator-adapter`
 Expected: FAIL — cannot find module `./simulator-adapter.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1623,7 +1604,7 @@ export * from "./simulator-adapter.js";
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/runtime test -- simulator-adapter`
+Run: `pnpm test simulator-adapter`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1754,7 +1735,7 @@ describe("executionOrchestrator — golden path", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `pnpm --filter @traceguard/runtime test -- execution-orchestrator`
+Run: `pnpm test execution-orchestrator`
 Expected: FAIL — cannot find module `./execution-orchestrator.js`.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -1885,7 +1866,7 @@ export * from "./execution-orchestrator.js";
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pnpm --filter @traceguard/runtime test -- execution-orchestrator`
+Run: `pnpm test execution-orchestrator`
 Expected: PASS (2 tests).
 
 - [ ] **Step 5: Commit**
@@ -2070,7 +2051,7 @@ describe("executionOrchestrator — revocation race", () => {
 
 Because the orchestrator is already implemented (Task 13), these integration tests should mostly pass on first run — but run them to confirm the crux holds:
 
-Run: `pnpm --filter @traceguard/runtime test -- execution-orchestrator`
+Run: `pnpm test execution-orchestrator`
 Expected: All suites PASS. If the re-drive test fails with `adapter.calls === 1`, the burn was not persisted before the adapter call — fix the ordering in `execution-orchestrator.ts` (append must `await` before `adapter.call`).
 
 - [ ] **Step 3: Run the whole workspace test suite & typecheck**
