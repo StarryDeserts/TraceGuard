@@ -6,7 +6,15 @@ import {
   sha256hex,
   verifyChain,
 } from "@traceguard/event-ledger";
-import type { DecisionEnvelope, Policy, PolicyEvaluatedPayload, RunStatus } from "@traceguard/schemas";
+import type {
+  ApprovalApprovedPayload,
+  ApprovalRequestedPayload,
+  AuthorizationIssuedPayload,
+  DecisionEnvelope,
+  Policy,
+  PolicyEvaluatedPayload,
+  RunStatus,
+} from "@traceguard/schemas";
 import {
   allowDecisionEnvelope,
   allowPolicy,
@@ -26,6 +34,7 @@ import {
   sampleWorkspaceId,
   sequentialIdGen,
 } from "@traceguard/testing-fixtures";
+import { computeActionDigest } from "@traceguard/policy-engine";
 import { proposeDecision } from "./propose-decision.js";
 import { resolveAuthorizationGateway, type ApprovalTransitionDeps } from "./authorization-gateway.js";
 import { approveApproval, expireApproval, rejectApproval } from "./approval-transitions.js";
@@ -145,6 +154,21 @@ describe("Phase 1B acceptance", () => {
     expect(approval.status).toBe("approved");
     expect(approval.authorizationId).toBeDefined();
     expect(approval.authorizationExpiresAt).toBe(sampleAuthorizationExpiresAt);
+
+    // Invariant I4: the digest the human approved is the digest that gets authorized.
+    // Thread actionDigest through ApprovalRequested → ApprovalApproved → AuthorizationIssued and
+    // pin it to the independently computed digest, so a future change cannot silently re-key the
+    // authorization to a different action than the one surfaced for approval.
+    const expectedDigest = computeActionDigest(
+      { ...sampleActionDigestInput, decisionId: approvalDecisionEnvelope.id },
+      sha256hex,
+    );
+    const requestedEvt = stored.find((e) => e.eventType === "ApprovalRequested")!;
+    const approvedEvt = stored.find((e) => e.eventType === "ApprovalApproved")!;
+    const issuedEvt = stored.find((e) => e.eventType === "AuthorizationIssued")!;
+    expect((requestedEvt.payload as ApprovalRequestedPayload).actionDigest).toBe(expectedDigest);
+    expect((approvedEvt.payload as ApprovalApprovedPayload).actionDigest).toBe(expectedDigest);
+    expect((issuedEvt.payload as AuthorizationIssuedPayload).actionDigest).toBe(expectedDigest);
   });
 
   it("require_approval → user rejects → no authorization", async () => {
