@@ -37,6 +37,27 @@ export function runStatusProjection(events: LedgerEvent[]): RunStatus {
         }
         break;
       }
+      case "ExecutionRequested":
+        status = "executing";
+        break;
+      case "ExecutionUnknown":
+        status = "executing";
+        break;
+      case "ExecutionRejected":
+        status = "blocked";
+        break;
+      case "ExecutionCompleted":
+        status = "completed";
+        break;
+      case "RunCompleted":
+        status = "completed";
+        break;
+      case "RunFailed":
+        status = "failed";
+        break;
+      case "ApprovalRevoked":
+        status = "blocked";
+        break;
       default:
         break;
     }

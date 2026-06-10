@@ -74,3 +74,24 @@ describe("runStatusProjection", () => {
     expect(runStatusProjection([ev("ApprovalRequested"), ev("ApprovalExpired")])).toBe("approval_required");
   });
 });
+
+describe("runStatusProjection — execution lifecycle", () => {
+  it("moves to executing on ExecutionRequested", () => {
+    expect(runStatusProjection([ev("ExecutionRequested")])).toBe("executing");
+  });
+  it("moves to completed on ExecutionCompleted then RunCompleted", () => {
+    expect(runStatusProjection([ev("ExecutionRequested"), ev("ExecutionCompleted"), ev("RunCompleted")])).toBe("completed");
+  });
+  it("moves to blocked on ExecutionRejected", () => {
+    expect(runStatusProjection([ev("ExecutionRejected")])).toBe("blocked");
+  });
+  it("stays executing on ExecutionUnknown", () => {
+    expect(runStatusProjection([ev("ExecutionRequested"), ev("ExecutionUnknown")])).toBe("executing");
+  });
+  it("moves to failed on RunFailed", () => {
+    expect(runStatusProjection([ev("ExecutionRequested"), ev("RunFailed")])).toBe("failed");
+  });
+  it("moves to blocked on ApprovalRevoked", () => {
+    expect(runStatusProjection([ev("ApprovalRequested"), ev("ApprovalRevoked")])).toBe("blocked");
+  });
+});
