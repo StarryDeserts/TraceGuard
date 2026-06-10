@@ -1190,6 +1190,49 @@ interface TelegramNotificationSentPayload {
 
 ------
 
+## 6.35 ApprovalRevoked
+
+```ts
+interface ApprovalRevokedPayload {
+  approvalId: string;
+  revokedBy?: string;
+  revokedAt: string;
+  reason?: string;
+}
+```
+
+Revocation rule:
+
+```text
+ApprovalRevoked invalidates the backing approval. Any authorization that references this approvalId is projected to revoked, so a subsequent execution attempt is denied at the authorization guard with missing_authorization.
+```
+
+------
+
+## 6.36 RunCompleted
+
+```ts
+interface RunCompletedPayload {
+  runId: string;
+  completedAt: string;
+  executionId?: string;
+}
+```
+
+------
+
+## 6.37 RunFailed
+
+```ts
+interface RunFailedPayload {
+  runId: string;
+  failedAt: string;
+  reasonCode: "orchestrator_error";
+}
+```
+
+------
+
 ## 7. End-to-End Event Sequences
 
 ## 7.1 First-time onboarding
@@ -1391,10 +1434,11 @@ ApprovalRequested -> approval_required
 ApprovalApproved -> approval_required
 ExecutionRequested -> executing
 ExecutionCompleted -> completed
-ExecutionRejected -> blocked or completed
+ExecutionRejected -> blocked
 ExecutionUnknown -> executing (held for reconciliation; retry blocked, no terminal transition until reconciled)
 RunCompleted -> completed
 RunFailed -> failed
+ApprovalRevoked -> blocked
 ReplayCompleted -> replayed when projection is replay-specific
 ```
 
