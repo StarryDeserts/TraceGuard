@@ -1,8 +1,11 @@
 import {
   AuthorizationConsumedPayload,
   AuthorizationRejectedPayload,
+  ExecutionCompletedPayload,
   ExecutionRejectedPayload,
   ExecutionRequestedPayload,
+  ExecutionUnknownPayload,
+  RunCompletedPayload,
   type ActorType,
   type ExecutionAdapterType,
   type ExecutionRejectionReason,
@@ -10,7 +13,7 @@ import {
 } from "@traceguard/schemas";
 import { canonicalJson, makeEvent, type Clock, type IdGen } from "@traceguard/event-ledger";
 import { evaluateAuthorizationUse, type AuthorizationUseStatus } from "@traceguard/policy-engine";
-import type { ExecutionRequest } from "./execution-adapter.js";
+import type { ExecutionRequest, ExecutionResult } from "./execution-adapter.js";
 
 export interface ExecutionTransitionDeps {
   clock: Clock;
@@ -204,4 +207,72 @@ export function authorizeExecution(
     requestHash,
   };
   return { events, outcome: "executing", request };
+}
+
+export interface SettleExecutionArgs {
+  workspaceId: string;
+  runId: string;
+  decisionId: string;
+  executionId: string;
+  adapterType: ExecutionAdapterType;
+  previousEventHash?: string | null;
+}
+
+export interface SettleExecutionResult {
+  events: LedgerEvent[];
+  outcome: "completed" | "unknown";
+}
+
+export function settleExecution(
+  args: SettleExecutionArgs,
+  result: ExecutionResult,
+  deps: ExecutionTransitionDeps,
+): SettleExecutionResult {
+  const startHash = args.previousEventHash ?? null;
+  const { events, emit } = createEmitter(args.workspaceId, args.runId, deps, startHash);
+  const now = deps.clock.now();
+
+  if (result.kind === "completed") {
+    emit(
+      "execution",
+      args.executionId,
+      "ExecutionCompleted",
+      "system",
+      ExecutionCompletedPayload.parse({
+        executionId: args.executionId,
+        runId: args.runId,
+        adapterType: args.adapterType,
+        finalStatus: result.finalStatus,
+        receiptRef: result.receiptRef,
+        receiptHash: result.receiptHash,
+        ...(result.upstreamRef ? { upstreamRef: result.upstreamRef } : {}),
+        completedAt: now,
+      }),
+    );
+    emit(
+      "run",
+      args.runId,
+      "RunCompleted",
+      "system",
+      RunCompletedPayload.parse({ runId: args.runId, completedAt: now, executionId: args.executionId }),
+    );
+    return { events, outcome: "completed" };
+  }
+
+  emit(
+    "execution",
+    args.executionId,
+    "ExecutionUnknown",
+    "system",
+    ExecutionUnknownPayload.parse({
+      executionId: args.executionId,
+      runId: args.runId,
+      adapterType: "bitget_live",
+      reasonCode: result.reasonCode,
+      ...(result.upstreamRequestId ? { upstreamRequestId: result.upstreamRequestId } : {}),
+      reconciliationRequired: true,
+      retryBlocked: true,
+    }),
+  );
+  return { events, outcome: "unknown" };
 }

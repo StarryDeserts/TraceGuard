@@ -3,12 +3,16 @@ import { sha256hex } from "@traceguard/event-ledger";
 import type {
   AuthorizationConsumedPayload,
   AuthorizationRejectedPayload,
+  ExecutionCompletedPayload,
   ExecutionRejectedPayload,
   ExecutionRequestedPayload,
+  ExecutionUnknownPayload,
   LedgerEvent,
+  RunCompletedPayload,
 } from "@traceguard/schemas";
 import { fixedClock, sequentialIdGen, sampleWorkspaceId, sampleRunId, sampleDecisionId } from "@traceguard/testing-fixtures";
-import { authorizeExecution } from "./execution-transitions.js";
+import type { ExecutionResult } from "./execution-adapter.js";
+import { authorizeExecution, settleExecution } from "./execution-transitions.js";
 
 function deps(instant?: string) {
   return { clock: fixedClock(instant), newId: sequentialIdGen(), hash: sha256hex };
@@ -95,5 +99,49 @@ describe("authorizeExecution", () => {
     expect(rejected.payload.reasonCode).toBe("capability_unavailable");
     expect(rejected.payload.executionSent).toBe(false);
     expect(result.request).toBeUndefined();
+  });
+});
+
+function settleArgs(overrides: Record<string, unknown> = {}) {
+  return {
+    workspaceId: sampleWorkspaceId,
+    runId: sampleRunId,
+    decisionId: sampleDecisionId,
+    executionId: "exec_1",
+    adapterType: "simulator" as const,
+    previousEventHash: null,
+    ...overrides,
+  };
+}
+
+describe("settleExecution", () => {
+  it("emits ExecutionCompleted then RunCompleted for a completed result", () => {
+    const result: ExecutionResult = {
+      kind: "completed",
+      finalStatus: "simulated",
+      receiptRef: "receipt:exec_1",
+      receiptHash: "rh_1",
+    };
+    const out = settleExecution(settleArgs(), result, deps());
+    expect(out.outcome).toBe("completed");
+    expect(out.events.map((e) => e.eventType)).toEqual(["ExecutionCompleted", "RunCompleted"]);
+    const completed = out.events[0] as LedgerEvent<ExecutionCompletedPayload>;
+    expect(completed.payload.finalStatus).toBe("simulated");
+    expect(completed.payload.receiptRef).toBe("receipt:exec_1");
+    const runCompleted = out.events[1] as LedgerEvent<RunCompletedPayload>;
+    expect(runCompleted.aggregateType).toBe("run");
+    expect(runCompleted.payload.executionId).toBe("exec_1");
+    expect(runCompleted.previousEventHash).toBe(completed.eventHash);
+  });
+
+  it("emits ExecutionUnknown only for an unknown result (no run closure)", () => {
+    const result: ExecutionResult = { kind: "unknown", reasonCode: "provider_status_unavailable" };
+    const out = settleExecution(settleArgs({ adapterType: "bitget_live" as const }), result, deps());
+    expect(out.outcome).toBe("unknown");
+    expect(out.events.map((e) => e.eventType)).toEqual(["ExecutionUnknown"]);
+    const unknown = out.events[0] as LedgerEvent<ExecutionUnknownPayload>;
+    expect(unknown.payload.adapterType).toBe("bitget_live");
+    expect(unknown.payload.reconciliationRequired).toBe(true);
+    expect(unknown.payload.retryBlocked).toBe(true);
   });
 });
