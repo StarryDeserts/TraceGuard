@@ -62,3 +62,13 @@ export const ApprovalExpiredPayload = z
   })
   .strict();
 export type ApprovalExpiredPayload = z.infer<typeof ApprovalExpiredPayload>;
+
+export const ApprovalRevokedPayload = z
+  .object({
+    approvalId: z.string().min(1),
+    revokedBy: z.string().min(1).optional(),
+    revokedAt: IsoTimestamp,
+    reason: z.string().min(1).optional(),
+  })
+  .strict();
+export type ApprovalRevokedPayload = z.infer<typeof ApprovalRevokedPayload>;

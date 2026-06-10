@@ -6,6 +6,7 @@ import {
   ApprovalApprovedPayload,
   ApprovalRejectedPayload,
   ApprovalExpiredPayload,
+  ApprovalRevokedPayload,
 } from "./approval-payloads.js";
 
 describe("approval payloads", () => {
@@ -92,5 +93,20 @@ describe("approval payloads", () => {
       actionDigest: "digest_1",
     });
     expect(p.actionDigest).toBe("digest_1");
+  });
+});
+
+describe("ApprovalRevokedPayload", () => {
+  it("requires approvalId and a revokedAt timestamp, optional revoker and reason", () => {
+    const ok = ApprovalRevokedPayload.parse({
+      approvalId: "appr_1",
+      revokedBy: "user_1",
+      revokedAt: "2026-06-08T00:00:00.000Z",
+      reason: "manual stand-down",
+    });
+    expect(ok.approvalId).toBe("appr_1");
+    expect(() => ApprovalRevokedPayload.parse({ approvalId: "appr_1", revokedAt: "2026-06-08T00:00:00.000Z" })).not.toThrow();
+    expect(() => ApprovalRevokedPayload.parse({ revokedAt: "2026-06-08T00:00:00.000Z" })).toThrow();
+    expect(() => ApprovalRevokedPayload.parse({ ...ok, extra: 1 })).toThrow();
   });
 });
