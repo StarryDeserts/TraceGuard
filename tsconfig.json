@@ -5,6 +5,7 @@
     { "path": "./packages/event-ledger" },
     { "path": "./packages/policy-engine" },
     { "path": "./packages/testing-fixtures" },
-    { "path": "./packages/domain" }
+    { "path": "./packages/domain" },
+    { "path": "./packages/runtime" }
   ]
 }

@@ -52,6 +52,22 @@ importers:
         specifier: workspace:*
         version: link:../schemas
 
+  packages/runtime:
+    dependencies:
+      '@traceguard/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@traceguard/event-ledger':
+        specifier: workspace:*
+        version: link:../event-ledger
+      '@traceguard/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+    devDependencies:
+      '@traceguard/testing-fixtures':
+        specifier: workspace:*
+        version: link:../testing-fixtures
+
   packages/schemas:
     dependencies:
       zod:
