@@ -6,3 +6,4 @@ export * from "./ledger-store.js";
 export * from "./run-status-projection.js";
 export * from "./approval-projection.js";
 export * from "./authorization-projection.js";
+export * from "./system-clock.js";
