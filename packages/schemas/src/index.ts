@@ -9,3 +9,4 @@ export * from "./approval-payloads.js";
 export * from "./authorization-payloads.js";
 export * from "./execution-payloads.js";
 export * from "./run-payloads.js";
+export * from "./canonical-json.js";
