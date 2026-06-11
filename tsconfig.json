@@ -6,6 +6,7 @@
     { "path": "./packages/policy-engine" },
     { "path": "./packages/testing-fixtures" },
     { "path": "./packages/domain" },
-    { "path": "./packages/runtime" }
+    { "path": "./packages/runtime" },
+    { "path": "./packages/tool-manifest" }
   ]
 }
