@@ -408,7 +408,7 @@ interface ToolManifestImportedPayload {
   toolManifestVersionId: string;
   providerConnectionId: string;
   manifestHash: string;
-  normalizationVersion: string;
+  normalizationVersion: number;
 
   tools: Array<{
     name: string;
@@ -1516,7 +1516,7 @@ interface ToolInventoryView {
   providerConnectionId?: string;
   manifestHash?: string;
   approvedManifestHash?: string;
-  normalizationVersion?: string;
+  normalizationVersion?: number;
 
   tools: Array<{
     name: string;
