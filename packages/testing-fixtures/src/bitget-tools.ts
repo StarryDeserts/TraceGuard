@@ -50,3 +50,6 @@ export const bitget36RawTools: RawUpstreamTool[] = [
   // administrative (1) — apiKeyPermissions keeps it administrative under join
   { name: "manage_subaccounts", inputSchema: obj({ action: str, apiKeyPermissions: { type: "array", items: str } }) },
 ];
+
+// Pinned in Task 14 Step 4 from the failing golden test's printed value.
+export const bitgetManifestHashV1 = "5067548f3f56b29ff0a7e8d97c765933e576a8ae047c73ab2b672aaa4cee6d63";
