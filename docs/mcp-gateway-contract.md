@@ -443,29 +443,36 @@ include provider identity
 ### 7.3 Manifest Hash
 
 ```text
-manifestHash = sha256(canonical_json(sorted(NormalizedToolDefinition[])))
+manifestHash = sha256hex(canonicalJson({
+  normalizationVersion,
+  tools: sortByName([{ name, riskClass, schemaHash }])
+}))
 ```
 
-Manifest hash inputs:
+Properties:
 
 ```text
-provider type
-provider connection ID
-tool name
-title
-description
-input schema
-output schema
-annotations
-risk class
-normalization version
+order-independent over the tool list
+changes iff any tool's (name, riskClass, schemaHash) changes,
+a tool is added or removed,
+or normalizationVersion bumps
 ```
 
-The risk class is included intentionally. If a tool is reclassified from `public_read` to `trade_like`, this should create manifest drift.
+The per-tool `schemaHash` is itself a sha256 of the canonicalized normalized tool definition (provider type, provider connection ID, tool name, title, description, input schema, output schema, annotations), so any schema or description change propagates into the manifest hash through that tool's `schemaHash`.
+
+The risk class is included intentionally. If a tool is reclassified from `public_read` to `trade_like`, this creates manifest drift.
 
 ------
 
 ### 7.4 Tool Visibility
+
+The projection re-derives a tool's `status` from its `riskClass` (see §8.3 of `event-model.md`) and `visible` follows from `status`:
+
+```text
+visible  = status active   (public_read | account_read | trade_like defaults)
+blocked  = asset_movement | administrative defaults, or operator blocklist
+frozen   = unknown risk, or a pending sensitive-change review
+```
 
 | Tool status            | Visible to model? | Notes                    |
 | ---------------------- | ----------------- | ------------------------ |
@@ -474,7 +481,7 @@ The risk class is included intentionally. If a tool is reclassified from `public
 | Approved trade-like    | Yes               | Requires policy path     |
 | Frozen                 | No                | Not visible until review |
 | Blocked                | No                | Not visible              |
-| Unknown                | No by default     | Must be classified       |
+| Unknown                | No by default     | Frozen until classified  |
 | Changed sensitive tool | No                | Frozen until review      |
 
 The model should not plan around tools that TraceGuard will never allow.
@@ -494,24 +501,55 @@ TraceGuard maps provider-specific tools into normalized risk classes.
 | `administrative` | API key, broker, account management                          | Block by default |
 | `unknown`        | Not classified                                               | Freeze or block  |
 
+The classifier uses **Approach B**: two orthogonal axes — **recognition** (is this tool known?) and **severity** (how dangerous is it?). The two never mix.
+
 ------
 
-### 8.1 Classification Signals
+### 8.1 Recognition: Base-Table Lookup
 
-Use multiple signals:
+The classifier first looks the tool up in a per-provider base table keyed by `(providerType, name)`:
 
 ```text
-provider type
-tool name
-tool module
-tool description
-input schema
-known provider mapping
-operator override
-historical review
+hit  -> base riskClass is the table entry
+miss -> riskClass = unknown -> freeze; raise rules are short-circuited
 ```
 
-Descriptions are untrusted. They may raise risk but must not lower risk by themselves.
+A miss never falls through to severity raises. Unknown tools must be reviewed before they can be classified.
+
+------
+
+### 8.2 Severity Lattice and Raise-Only Join
+
+The risk classes form a totally ordered lattice from low to high severity:
+
+```text
+public_read < account_read < trade_like < asset_movement < administrative
+```
+
+The final classification is the lattice maximum (`joinRisk`) of the base class and every triggered raise rule.
+
+```text
+classification = joinRisk(baseClass, raise_1, raise_2, ..., raise_n)
+```
+
+This is **raise-only**: a rule can raise severity but never lower it. The raise-only property is guaranteed structurally by the join — no rule needs an explicit "do not lower" check.
+
+Raise rules:
+
+```text
+sensitive schema field:
+  address | withdrawAddress | chain                  -> asset_movement
+  apiKeyPassphrase | apiKeyPermissions | apiKeyIp    -> administrative
+
+write annotation:
+  destructiveHint = true | readOnlyHint = false      -> trade_like
+
+danger tag in title or description:
+  [DANGER]                                           -> asset_movement
+  [CAUTION]                                          -> trade_like
+```
+
+Descriptions are untrusted. They may raise risk but cannot lower it.
 
 Example:
 
@@ -519,19 +557,24 @@ Example:
 A tool named `safe_get_status` with schema field `withdrawAddress` should not be public_read.
 ```
 
+If uncertain, `unknown -> freeze`. Risk may be raised automatically. Risk may only be lowered through review (an operator-approved manifest change that re-runs the classifier with new inputs).
+
 ------
 
-### 8.2 Conservative Classification
+### 8.3 Bitget Base Table
 
-If uncertain:
+The locked Bitget Agent Hub baseline lists 36 tools with the distribution:
 
 ```text
-unknown → freeze
+public_read     13
+account_read    10
+trade_like       9
+asset_movement   3
+administrative   1
+total           36
 ```
 
-Risk may be raised automatically.
-
-Risk may only be lowered through review.
+At the locked baseline this resolves to **32 visible, 4 blocked, 0 frozen**.
 
 ------
 

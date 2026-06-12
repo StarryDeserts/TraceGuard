@@ -401,14 +401,20 @@ Every capability is false until detected or explicitly configured.
 
 ## 6.4 ToolManifestImported
 
+Aggregate: `tool_manifest`. Actor: `system`.
+
 ```ts
 interface ToolManifestImportedPayload {
+  toolManifestVersionId: string;
   providerConnectionId: string;
-  manifestVersionId: string;
-  providerVersion?: string;
-  toolCount: number;
   manifestHash: string;
-  importedToolNames: string[];
+  normalizationVersion: string;
+
+  tools: Array<{
+    name: string;
+    riskClass: ToolRiskClass;
+    schemaHash: string;
+  }>;
 }
 ```
 
@@ -416,30 +422,33 @@ interface ToolManifestImportedPayload {
 
 ## 6.5 ToolManifestChanged
 
+Aggregate: `tool_manifest`. Actor: `system`.
+
 ```ts
 interface ToolManifestChangedPayload {
+  toolManifestVersionId: string;
   providerConnectionId: string;
 
-  previousManifestVersionId: string;
-  newManifestVersionId: string;
-
   previousManifestHash: string;
-  newManifestHash: string;
+  manifestHash: string;
 
-  changedTools: Array<{
-    toolName: string;
-    changeType:
-      | "added"
-      | "removed"
-      | "schema_changed"
-      | "description_changed"
-      | "risk_class_changed";
+  added: ToolManifestEntry[];
+  removed: string[];
 
+  changed: Array<{
+    name: string;
+    previousSchemaHash?: string;
+    schemaHash?: string;
     previousRiskClass?: ToolRiskClass;
-    newRiskClass?: ToolRiskClass;
+    riskClass?: ToolRiskClass;
+    sensitive: boolean;
   }>;
+}
 
-  defaultAction: "freeze_changed_tools";
+interface ToolManifestEntry {
+  name: string;
+  riskClass: ToolRiskClass;
+  schemaHash: string;
 }
 ```
 
@@ -453,21 +462,61 @@ Changed trade-like, asset-movement, administrative, or unknown tools are frozen 
 
 ## 6.6 ToolFrozen
 
+Aggregate: `tool_definition`. Actor: `system`.
+
 ```ts
 interface ToolFrozenPayload {
   providerConnectionId: string;
   toolName: string;
-  toolDefinitionId: string;
+  manifestHash: string;
 
   reasonCode:
-    | "new_sensitive_tool"
-    | "schema_changed"
-    | "description_changed"
-    | "risk_class_changed"
-    | "manual_freeze";
-
-  manifestVersionId: string;
+    | "changed_sensitive"
+    | "unknown_risk";
 }
+```
+
+------
+
+## 6.6.1 ToolBlocked
+
+Aggregate: `tool_definition`. Actor: `system`.
+
+```ts
+interface ToolBlockedPayload {
+  providerConnectionId: string;
+  toolName: string;
+  riskClass: ToolRiskClass;
+  manifestHash: string;
+
+  reasonCode:
+    | "risk_class_default"
+    | "operator_blocklist";
+}
+```
+
+------
+
+## 6.6.2 ToolManifestApproved
+
+Aggregate: `tool_manifest`. Actor: `user`.
+
+```ts
+interface ToolManifestApprovedPayload {
+  toolManifestVersionId: string;
+  providerConnectionId: string;
+  manifestHash: string;
+
+  approvedBy: string;
+  approvedAt: string;
+}
+```
+
+Approval semantics:
+
+```text
+ToolManifestApproved releases changed_sensitive freezes back to the class default.
+unknown_risk freezes persist across approval.
 ```
 
 ------
@@ -1460,12 +1509,39 @@ ApprovalRevoked -> revoked
 
 ## 8.3 Tool projection
 
+The tool projection is materialized as `ToolInventoryView`:
+
+```ts
+interface ToolInventoryView {
+  providerConnectionId?: string;
+  manifestHash?: string;
+  approvedManifestHash?: string;
+  normalizationVersion?: string;
+
+  tools: Array<{
+    name: string;
+    riskClass: ToolRiskClass;
+    schemaHash: string;
+    status: "active" | "blocked" | "frozen";
+    visible: boolean;
+    freezeReason?: "changed_sensitive" | "unknown_risk";
+  }>;
+}
+```
+
+Status defaults are re-derived by the projection from each tool's `riskClass`:
+
 ```text
-ToolManifestImported -> imported
-ToolManifestApproved -> approved
-ToolManifestChanged -> needs_review
-ToolFrozen -> frozen
-ToolBlocked -> blocked
+asset_movement | administrative -> blocked
+unknown                         -> frozen
+otherwise                       -> active
+```
+
+Approval semantics:
+
+```text
+ToolManifestApproved releases changed_sensitive freezes back to the class default.
+unknown_risk freezes persist across approval.
 ```
 
 ------
