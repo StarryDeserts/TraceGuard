@@ -393,6 +393,8 @@ Client requests tools/list
 → Record manifest events
 ```
 
+> **TraceGuard local stdio gateway (3C):** In the local stdio gateway this pipeline runs **once at startup** (`bootGateway`). `tools/list` is then answered from the governed in-memory cache — the persisted manifest projection joined with that boot's normalized tool definitions — not a fresh per-request upstream fetch. The long-lived upstream connection is reused by the call-routing milestone (3D).
+
 ------
 
 ### 7.2 Normalized Tool Definition
@@ -1219,6 +1221,7 @@ Do not depend on this for v0.1.
 | `TOOL_NOT_APPROVED`          | Tool is not in approved manifest                  |
 | `TOOL_FROZEN`                | Tool changed and awaits review                    |
 | `TOOL_BLOCKED`               | Tool is explicitly blocked                        |
+| `TOOL_CALL_NOT_AVAILABLE`    | Gateway build does not yet route tool execution (pre-3D); fail-closed deny |
 | `UNKNOWN_TOOL`               | Tool is not recognized                            |
 | `DECISION_ENVELOPE_REQUIRED` | Sensitive action lacks Decision Envelope          |
 | `DECISION_INVALID`           | Decision Envelope failed schema validation        |
