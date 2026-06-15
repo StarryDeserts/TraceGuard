@@ -4,5 +4,6 @@ export * from "./import-manifest.js";
 export * from "./stdio-upstream-client.js";
 export * from "./gateway-state.js";
 export * from "./call-router.js";
+export * from "./tool-call-events.js";
 export * from "./gateway-server.js";
 export * from "./boot-gateway.js";
