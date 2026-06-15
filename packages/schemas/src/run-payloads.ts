@@ -21,3 +21,12 @@ export const RunFailedPayload = z
   })
   .strict();
 export type RunFailedPayload = z.infer<typeof RunFailedPayload>;
+
+export const RunCreatedPayload = z
+  .object({
+    runId: z.string().min(1),
+    providerConnectionId: z.string().min(1),
+    createdAt: IsoTimestamp,
+  })
+  .strict();
+export type RunCreatedPayload = z.infer<typeof RunCreatedPayload>;
