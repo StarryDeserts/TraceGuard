@@ -1,5 +1,5 @@
-import type { NormalizedToolDefinition } from "@traceguard/schemas";
-import type { ToolInventoryView } from "@traceguard/event-ledger";
+import type { NormalizedToolDefinition, RiskClass } from "@traceguard/schemas";
+import type { ToolInventoryView, ToolStatus } from "@traceguard/event-ledger";
 
 // A faithful pass-through of the MCP Tool fields, for the governed-visible subset.
 export interface ServedTool {
@@ -11,8 +11,14 @@ export interface ServedTool {
   annotations?: Record<string, unknown>;
 }
 
+export interface RouteEntry {
+  status: ToolStatus;
+  riskClass: RiskClass;
+}
+
 export interface GatewayState {
   servedTools: ServedTool[];
+  route: Map<string, RouteEntry>;
   manifestHash: string | null; // null only in degraded mode
   toolCount: number; // upstream tool count this boot (0 when degraded)
   degraded: boolean; // true when startup import failed (provider degraded)
@@ -48,6 +54,9 @@ export function buildGatewayState(args: {
 }): GatewayState {
   return {
     servedTools: selectServedTools(args.normalized, args.view),
+    route: new Map(
+      args.view.tools.map((t) => [t.name, { status: t.status, riskClass: t.riskClass }]),
+    ),
     manifestHash: args.manifestHash,
     toolCount: args.toolCount,
     degraded: false,
@@ -55,5 +64,11 @@ export function buildGatewayState(args: {
 }
 
 export function degradedState(): GatewayState {
-  return { servedTools: [], manifestHash: null, toolCount: 0, degraded: true };
+  return {
+    servedTools: [],
+    route: new Map(),
+    manifestHash: null,
+    toolCount: 0,
+    degraded: true,
+  };
 }

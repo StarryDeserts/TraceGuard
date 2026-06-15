@@ -66,9 +66,35 @@ describe("selectServedTools / buildGatewayState", () => {
   it("degradedState exposes zero tools and a null manifest hash", () => {
     expect(degradedState()).toEqual({
       servedTools: [],
+      route: new Map(),
       manifestHash: null,
       toolCount: 0,
       degraded: true,
+    });
+  });
+
+  it("route classifies every tool including hidden blocked ones", () => {
+    const result = reconcileManifest({ ...baseArgs, observed: bitget36RawTools }, makeDeps());
+    const view = toolManifestProjection(result.events);
+    const state = buildGatewayState({
+      normalized: result.normalized,
+      view,
+      manifestHash: result.manifestHash,
+      toolCount: bitget36RawTools.length,
+    });
+    expect(state.route.size).toBe(36);
+    for (const blocked of [
+      "transfer",
+      "withdraw",
+      "cancel_withdrawal",
+      "manage_subaccounts",
+    ]) {
+      expect(state.route.get(blocked)?.status).toBe("blocked");
+      expect(state.servedTools.map((t) => t.name)).not.toContain(blocked);
+    }
+    expect(state.route.get("spot_get_ticker")).toEqual({
+      status: "active",
+      riskClass: "public_read",
     });
   });
 });

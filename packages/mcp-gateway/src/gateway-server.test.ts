@@ -7,6 +7,7 @@ import type { GatewayState } from "./gateway-state.js";
 function fixtureState(): GatewayState {
   return {
     servedTools: [{ name: "spot_get_ticker", inputSchema: { type: "object", properties: {} } }],
+    route: new Map(),
     manifestHash: "h",
     toolCount: 1,
     degraded: false,
