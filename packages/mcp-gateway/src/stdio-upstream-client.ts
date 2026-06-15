@@ -3,17 +3,20 @@ import {
   StdioClientTransport,
   getDefaultEnvironment,
 } from "@modelcontextprotocol/sdk/client/stdio.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { RawUpstreamTool } from "@traceguard/schemas";
 import {
   type UpstreamLaunchConfig,
   type UpstreamManifestClient,
   UpstreamUnavailableError,
   UpstreamListToolsError,
+  UpstreamCallError,
 } from "./upstream-client.js";
 import { mapTool } from "./map-tool.js";
 
 const DEFAULT_OPEN_TIMEOUT_MS = 10_000;
 const DEFAULT_LIST_TIMEOUT_MS = 10_000;
+const DEFAULT_CALL_TIMEOUT_MS = 10_000;
 
 export class StdioUpstreamClient implements UpstreamManifestClient {
   readonly #config: UpstreamLaunchConfig;
@@ -60,6 +63,23 @@ export class StdioUpstreamClient implements UpstreamManifestClient {
     } catch (err) {
       if (err instanceof UpstreamListToolsError) throw err;
       throw new UpstreamListToolsError(messageOf(err), { cause: err });
+    }
+  }
+
+  async callTool(name: string, args: Record<string, unknown>): Promise<CallToolResult> {
+    const client = this.#client;
+    if (client === null) {
+      throw new UpstreamCallError("callTool called before open");
+    }
+    try {
+      const result = await client.callTool(
+        { name, arguments: args },
+        undefined,
+        { timeout: DEFAULT_CALL_TIMEOUT_MS },
+      );
+      return result as CallToolResult;
+    } catch (err) {
+      throw new UpstreamCallError(messageOf(err), { cause: err });
     }
   }
 

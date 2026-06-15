@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { RawUpstreamTool } from "@traceguard/schemas";
 import { sha256hex } from "@traceguard/event-ledger";
 import { manifestFingerprint, type ReconcileDeps } from "@traceguard/tool-manifest";
@@ -34,6 +35,9 @@ class FakeUpstreamClient implements UpstreamManifestClient {
     if (this.script.kind === "listThrows") throw new UpstreamListToolsError("transport dropped");
     if (this.script.kind === "tools") return this.script.tools;
     throw new Error("unreachable");
+  }
+  async callTool(): Promise<CallToolResult> {
+    throw new Error("callTool is not exercised by this test");
   }
   async close(): Promise<void> {
     this.closed++;

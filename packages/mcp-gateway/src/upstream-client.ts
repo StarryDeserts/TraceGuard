@@ -1,3 +1,4 @@
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { RawUpstreamTool } from "@traceguard/schemas";
 
 export interface UpstreamLaunchConfig {
@@ -11,6 +12,7 @@ export interface UpstreamLaunchConfig {
 export interface UpstreamManifestClient {
   open(): Promise<void>; // spawn + MCP initialize handshake
   listTools(): Promise<RawUpstreamTool[]>; // MCP tools/list, mapped into RawUpstreamTool
+  callTool(name: string, args: Record<string, unknown>): Promise<CallToolResult>;
   close(): Promise<void>; // terminate the upstream; idempotent
 }
 
@@ -19,4 +21,7 @@ export class UpstreamUnavailableError extends Error {
 }
 export class UpstreamListToolsError extends Error {
   readonly name = "UpstreamListToolsError";
+}
+export class UpstreamCallError extends Error {
+  override readonly name = "UpstreamCallError";
 }
