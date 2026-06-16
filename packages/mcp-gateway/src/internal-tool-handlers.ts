@@ -216,7 +216,7 @@ async function recordDecision(
     decisionHash,
     summary: {
       instrument,
-      action: action as DecisionAction,
+      action,
       ...(notional !== undefined ? { notionalUsdt: notional } : {}),
       ...(leverage !== undefined ? { leverage } : {}),
     },
