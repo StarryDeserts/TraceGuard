@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { createRequire } from "node:module";
 import { SystemClock, SystemIdGen, sha256hex, InMemoryLedgerStore } from "@traceguard/event-ledger";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { StdioUpstreamClient } from "./stdio-upstream-client.js";
 import { bootGateway } from "./boot-gateway.js";
 
@@ -35,6 +37,27 @@ describe.skipIf(!live)("gateway-local (live, gated by TRACEGUARD_LIVE_MCP)", () 
         expect(handle.state.manifestHash).toMatch(/^[0-9a-f]{64}$/);
         const names = handle.state.servedTools.map((t) => t.name);
         for (const blocked of BLOCKED) expect(names).not.toContain(blocked);
+        const [agentTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await handle.server.connect(serverTransport);
+        const agent = new Client({ name: "live-test-agent", version: "0.0.0" });
+        await agent.connect(agentTransport);
+        try {
+          const ok = await agent.callTool({
+            name: "spot_get_ticker",
+            arguments: { symbol: "BTCUSDT" },
+          });
+          expect((ok as { isError?: boolean }).isError).toBeFalsy();
+
+          const denied = await agent.callTool({
+            name: "spot_place_order",
+            arguments: {},
+          });
+          expect(
+            (denied as { traceguard?: { errorCode?: string } }).traceguard?.errorCode,
+          ).toBe("DECISION_ENVELOPE_REQUIRED");
+        } finally {
+          await agent.close();
+        }
       } finally {
         await handle.client.close();
       }
