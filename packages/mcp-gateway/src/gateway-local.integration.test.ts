@@ -55,6 +55,55 @@ describe.skipIf(!live)("gateway-local (live, gated by TRACEGUARD_LIVE_MCP)", () 
           expect(
             (denied as { traceguard?: { errorCode?: string } }).traceguard?.errorCode,
           ).toBe("DECISION_ENVELOPE_REQUIRED");
+
+          const listed = await agent.listTools();
+          expect(listed.tools.map((t) => t.name)).toContain("traceguard_record_decision");
+
+          await agent.callTool({
+            name: "traceguard_start_run",
+            arguments: { runId: handle.runId, agentName: "live", intent: "demo" },
+          });
+          const rec = await agent.callTool({
+            name: "traceguard_record_decision",
+            arguments: {
+              runId: handle.runId,
+              instrument: "BTCUSDT",
+              marketType: "futures",
+              action: "open_long",
+              thesis: "t",
+              evidenceRefs: ["ev:1"],
+              requestedNotionalUsdt: "100",
+              requestedLeverage: "2",
+            },
+          });
+          const decisionId = (rec as { traceguard?: { decisionId?: string } }).traceguard?.decisionId;
+          const allowed = await agent.callTool({
+            name: "traceguard_request_execution",
+            arguments: { runId: handle.runId, decisionId, executionAdapter: "simulator" },
+          });
+          expect((allowed as { traceguard?: { status?: string } }).traceguard?.status).toBe("ALLOWED");
+
+          const recBlocked = await agent.callTool({
+            name: "traceguard_record_decision",
+            arguments: {
+              runId: handle.runId,
+              instrument: "BTCUSDT",
+              marketType: "futures",
+              action: "open_long",
+              thesis: "t",
+              evidenceRefs: ["ev:1"],
+              requestedNotionalUsdt: "100",
+              requestedLeverage: "10",
+            },
+          });
+          const blockedId = (recBlocked as { traceguard?: { decisionId?: string } }).traceguard?.decisionId;
+          const blocked = await agent.callTool({
+            name: "traceguard_request_execution",
+            arguments: { runId: handle.runId, decisionId: blockedId, executionAdapter: "simulator" },
+          });
+          expect((blocked as { traceguard?: { errorCode?: string } }).traceguard?.errorCode).toBe(
+            "POLICY_BLOCKED",
+          );
         } finally {
           await agent.close();
         }

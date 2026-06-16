@@ -8,3 +8,12 @@ export * from "./tool-call-events.js";
 export * from "./gateway-server.js";
 export * from "./call-handler.js";
 export * from "./boot-gateway.js";
+export * from "./default-policy.js";
+export * from "./decision-cache.js";
+export * from "./evaluation-context.js";
+export * from "./internal-tools.js";
+export * from "./internal-tool-handlers.js";
+// internal-tool-context's InternalToolContext is already re-exported by
+// internal-tool-handlers.js; re-export only the two types it does not surface,
+// to avoid an `export *` name collision on InternalToolContext.
+export type { RunContext, ApprovalTtls } from "./internal-tool-context.js";
