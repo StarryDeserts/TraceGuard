@@ -394,6 +394,8 @@ Client requests tools/list
 ```
 
 > **TraceGuard local stdio gateway (3C):** In the local stdio gateway this pipeline runs **once at startup** (`bootGateway`). `tools/list` is then answered from the governed in-memory cache — the persisted manifest projection joined with that boot's normalized tool definitions — not a fresh per-request upstream fetch. The long-lived upstream connection is reused by the call-routing milestone (3D).
+>
+> As of 3D, governed `tools/call` requests are forwarded over this same long-lived connection — the gateway never reconnects per call.
 
 ------
 
@@ -581,6 +583,8 @@ At the locked baseline this resolves to **32 visible, 4 blocked, 0 frozen**.
 ------
 
 ## 9. Tool Call Contract
+
+> **3D status:** Existence + risk-class routing, governed read-class forwarding over the reused upstream connection, and digest-only `ToolCall*` / `IncidentOpened` audit events are live. Argument JSON-Schema validation, Decision Envelope construction, policy evaluation, approval, execution, and result redaction remain deferred to 3E.
 
 ### 9.1 `tools/call` Pipeline
 
@@ -1221,7 +1225,8 @@ Do not depend on this for v0.1.
 | `TOOL_NOT_APPROVED`          | Tool is not in approved manifest                  |
 | `TOOL_FROZEN`                | Tool changed and awaits review                    |
 | `TOOL_BLOCKED`               | Tool is explicitly blocked                        |
-| `TOOL_CALL_NOT_AVAILABLE`    | Gateway build does not yet route tool execution (pre-3D); fail-closed deny |
+| `TOOL_CALL_NOT_AVAILABLE`    | The gateway booted degraded (no governed call context / no active run); every `tools/call` is denied fail-closed. |
+| `UPSTREAM_CALL_FAILED`       | Upstream `tools/call` threw after a governed forward; fail-closed, the long-lived connection is retained. |
 | `UNKNOWN_TOOL`               | Tool is not recognized                            |
 | `DECISION_ENVELOPE_REQUIRED` | Sensitive action lacks Decision Envelope          |
 | `DECISION_INVALID`           | Decision Envelope failed schema validation        |
