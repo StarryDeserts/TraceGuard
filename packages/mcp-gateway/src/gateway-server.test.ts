@@ -11,6 +11,10 @@ import type { GatewayState, RouteEntry } from "./gateway-state.js";
 import type { UpstreamManifestClient } from "./upstream-client.js";
 import { recordRunCreated, type CallAudit } from "./tool-call-events.js";
 import { createGatewayServer, type GatewayCallContext } from "./gateway-server.js";
+import { createSimulatorAdapter } from "@traceguard/runtime";
+import { DEFAULT_POLICY } from "./default-policy.js";
+import { createDecisionCache } from "./decision-cache.js";
+import type { InternalToolContext } from "./internal-tool-context.js";
 
 const AUDIT: CallAudit = {
   workspaceId: "ws_demo",
@@ -59,13 +63,38 @@ async function makeCtx(d: ReturnType<typeof deps>): Promise<GatewayCallContext> 
 async function connectedClient(
   state: GatewayState,
   callCtx?: GatewayCallContext,
+  internalCtx?: InternalToolContext,
 ): Promise<Client> {
-  const server = createGatewayServer(state, callCtx);
+  const server = createGatewayServer(state, callCtx, internalCtx);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: "test-agent", version: "0.0.0" });
   await client.connect(clientTransport);
   return client;
+}
+
+async function makeInternalCtx(
+  d: ReturnType<typeof deps>,
+): Promise<{ callCtx: GatewayCallContext; internalCtx: InternalToolContext }> {
+  const store = new InMemoryLedgerStore();
+  const run = recordRunCreated(AUDIT, d, null);
+  await store.append(null, [run]);
+  const callCtx: GatewayCallContext = { client: new FakeUpstreamClient(), store, deps: d, audit: AUDIT };
+  const internalCtx: InternalToolContext = {
+    store,
+    deps: d,
+    audit: AUDIT,
+    policy: DEFAULT_POLICY,
+    adapter: createSimulatorAdapter({ hash: sha256hex }),
+    run: { runId: AUDIT.runId, mode: "safe_demo" },
+    cache: createDecisionCache(),
+    ttls: { approvalSeconds: 900, authorizationSeconds: 900 },
+  };
+  return { callCtx, internalCtx };
+}
+
+function tgStatus(res: unknown): Record<string, unknown> {
+  return ((res as { traceguard?: Record<string, unknown> }).traceguard ?? {}) as Record<string, unknown>;
 }
 
 function tg(res: unknown): { errorCode: string; toolName: string } {
@@ -98,6 +127,91 @@ describe("createGatewayServer governed tools/call", () => {
     const client = await connectedClient(fixtureState(), undefined);
     const res = await client.callTool({ name: "spot_get_ticker", arguments: {} });
     expect(tg(res).errorCode).toBe("TOOL_CALL_NOT_AVAILABLE");
+    await client.close();
+  });
+});
+
+describe("createGatewayServer internal traceguard_* tools", () => {
+  it("lists the six internal tools first, then the governed read tools", async () => {
+    const { callCtx, internalCtx } = await makeInternalCtx(deps());
+    const client = await connectedClient(fixtureState(), callCtx, internalCtx);
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    expect(names.slice(0, 6)).toEqual([
+      "traceguard_start_run",
+      "traceguard_record_decision",
+      "traceguard_request_execution",
+      "traceguard_check_approval",
+      "traceguard_execute_authorized_action",
+      "traceguard_finish_run",
+    ]);
+    expect(names).toContain("spot_get_ticker");
+    expect(names).not.toContain("spot_place_order"); // blocked/non-served, unchanged from 3D
+    await client.close();
+  });
+
+  it("drives start_run -> record_decision -> request_execution to ALLOWED through the SDK", async () => {
+    const { callCtx, internalCtx } = await makeInternalCtx(deps());
+    const client = await connectedClient(fixtureState(), callCtx, internalCtx);
+
+    await client.callTool({ name: "traceguard_start_run", arguments: { runId: "run_1", agentName: "a", intent: "i" } });
+    const rec = await client.callTool({
+      name: "traceguard_record_decision",
+      arguments: {
+        runId: "run_1",
+        instrument: "BTCUSDT",
+        marketType: "futures",
+        action: "open_long",
+        thesis: "t",
+        evidenceRefs: ["ev:1"],
+        requestedNotionalUsdt: "100",
+        requestedLeverage: "2",
+      },
+    });
+    const decisionId = tgStatus(rec).decisionId as string;
+
+    const exec = await client.callTool({
+      name: "traceguard_request_execution",
+      arguments: { runId: "run_1", decisionId, executionAdapter: "simulator" },
+    });
+    expect(tgStatus(exec).status).toBe("ALLOWED");
+    expect(typeof tgStatus(exec).executionId).toBe("string");
+    await client.close();
+  });
+
+  it("returns POLICY_BLOCKED for a high-leverage decision through the SDK", async () => {
+    const { callCtx, internalCtx } = await makeInternalCtx(deps());
+    const client = await connectedClient(fixtureState(), callCtx, internalCtx);
+
+    await client.callTool({ name: "traceguard_start_run", arguments: { runId: "run_1" } });
+    const rec = await client.callTool({
+      name: "traceguard_record_decision",
+      arguments: {
+        runId: "run_1",
+        instrument: "BTCUSDT",
+        marketType: "futures",
+        action: "open_long",
+        thesis: "t",
+        evidenceRefs: ["ev:1"],
+        requestedNotionalUsdt: "100",
+        requestedLeverage: "10",
+      },
+    });
+    const decisionId = tgStatus(rec).decisionId as string;
+    const exec = await client.callTool({
+      name: "traceguard_request_execution",
+      arguments: { runId: "run_1", decisionId, executionAdapter: "simulator" },
+    });
+    expect((exec as { isError?: boolean }).isError).toBe(true);
+    expect(tgStatus(exec).errorCode).toBe("POLICY_BLOCKED");
+    await client.close();
+  });
+
+  it("omits internal tools and short-circuits when no context is wired (degraded)", async () => {
+    const client = await connectedClient(fixtureState(), undefined, undefined);
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    expect(names.some((n) => n.startsWith("traceguard_"))).toBe(false);
+    const res = await client.callTool({ name: "traceguard_start_run", arguments: { runId: "run_1" } });
+    expect((res as unknown as { traceguard: { errorCode: string } }).traceguard.errorCode).toBe("TOOL_CALL_NOT_AVAILABLE");
     await client.close();
   });
 });
