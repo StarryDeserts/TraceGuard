@@ -15,6 +15,20 @@ import {
   UpstreamUnavailableError,
   type UpstreamManifestClient,
 } from "./upstream-client.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+
+function tg(res: unknown): Record<string, unknown> {
+  return ((res as { traceguard?: Record<string, unknown> }).traceguard ?? {}) as Record<string, unknown>;
+}
+
+async function connect(server: import("@modelcontextprotocol/sdk/server/index.js").Server): Promise<Client> {
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  const client = new Client({ name: "boot-test-agent", version: "0.0.0" });
+  await client.connect(clientTransport);
+  return client;
+}
 
 class FakeUpstreamClient implements UpstreamManifestClient {
   opened = 0;
@@ -113,5 +127,81 @@ describe("bootGateway", () => {
 
     expect(await store.read(baseArgs.workspaceId)).toHaveLength(0);
     expect(handle.runId).toBeUndefined();
+  });
+
+  it("happy path: exposes the operator seam and runs require_approval -> approve -> EXECUTED", async () => {
+    const client = new FakeUpstreamClient({ kind: "tools", tools: bitget36RawTools });
+    const store = new InMemoryLedgerStore();
+    const handle = await bootGateway(baseArgs, client, store, makeDeps());
+
+    expect(typeof handle.approve).toBe("function");
+    expect(typeof handle.reject).toBe("function");
+    expect(handle.runId).toMatch(/^run_/);
+
+    const agent = await connect(handle.server);
+    try {
+      await agent.callTool({
+        name: "traceguard_start_run",
+        arguments: { runId: handle.runId, agentName: "a", intent: "i" },
+      });
+      const rec = await agent.callTool({
+        name: "traceguard_record_decision",
+        arguments: {
+          runId: handle.runId,
+          instrument: "BTCUSDT",
+          marketType: "futures",
+          action: "open_long",
+          thesis: "t",
+          evidenceRefs: ["ev:1"],
+          requestedNotionalUsdt: "5000",
+          requestedLeverage: "2",
+        },
+      });
+      const decisionId = tg(rec).decisionId as string;
+
+      const reqExec = await agent.callTool({
+        name: "traceguard_request_execution",
+        arguments: { runId: handle.runId, decisionId, executionAdapter: "simulator" },
+      });
+      expect(tg(reqExec).status).toBe("APPROVAL_REQUIRED");
+      const approvalId = tg(reqExec).approvalId as string;
+
+      const pending = await agent.callTool({ name: "traceguard_check_approval", arguments: { approvalId } });
+      expect(tg(pending).status).toBe("PENDING");
+
+      const outcome = await handle.approve!(approvalId, { approvedBy: "ops", channel: "web" });
+      expect(outcome).toBe("approved");
+
+      const approved = await agent.callTool({ name: "traceguard_check_approval", arguments: { approvalId } });
+      expect(tg(approved).status).toBe("APPROVED");
+      const authorizationId = tg(approved).authorizationId as string;
+
+      const exec = await agent.callTool({
+        name: "traceguard_execute_authorized_action",
+        arguments: { runId: handle.runId, decisionId, authorizationId, executionAdapter: "simulator" },
+      });
+      expect(tg(exec).status).toBe("EXECUTED");
+      expect((tg(exec).receipt as { finalStatus?: string }).finalStatus).toBe("simulated");
+    } finally {
+      await agent.close();
+    }
+  });
+
+  it("degraded path: no operator seam, no runId, no internal tools listed", async () => {
+    const client = new FakeUpstreamClient({ kind: "listThrows" });
+    const store = new InMemoryLedgerStore();
+    const handle = await bootGateway(baseArgs, client, store, makeDeps());
+
+    expect(handle.approve).toBeUndefined();
+    expect(handle.reject).toBeUndefined();
+    expect(handle.runId).toBeUndefined();
+
+    const agent = await connect(handle.server);
+    try {
+      const names = (await agent.listTools()).tools.map((t) => t.name);
+      expect(names.some((n) => n.startsWith("traceguard_"))).toBe(false);
+    } finally {
+      await agent.close();
+    }
   });
 });

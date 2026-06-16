@@ -1,6 +1,16 @@
 import { reconcileManifest, type ReconcileDeps } from "@traceguard/tool-manifest";
-import { toolManifestProjection, type LedgerStore } from "@traceguard/event-ledger";
-import type { ProviderType } from "@traceguard/schemas";
+import {
+  toolManifestProjection,
+  approvalProjection,
+  type LedgerStore,
+} from "@traceguard/event-ledger";
+import type { ApprovalChannel, Policy, ProviderType } from "@traceguard/schemas";
+import {
+  approveApproval,
+  rejectApproval,
+  type ApprovalOutcome,
+} from "@traceguard/domain";
+import { createSimulatorAdapter } from "@traceguard/runtime";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   type UpstreamManifestClient,
@@ -11,12 +21,18 @@ import { buildGatewayState, degradedState, type GatewayState } from "./gateway-s
 import { createGatewayServer } from "./gateway-server.js";
 import { recordRunCreated, type CallAudit } from "./tool-call-events.js";
 import type { GatewayCallContext } from "./call-handler.js";
+import { DEFAULT_POLICY } from "./default-policy.js";
+import { createDecisionCache } from "./decision-cache.js";
+import { isoPlusSeconds } from "./evaluation-context.js";
+import { eventsForApproval } from "./internal-tool-handlers.js";
+import type { ApprovalTtls, InternalToolContext, RunContext } from "./internal-tool-context.js";
 
 export interface BootGatewayArgs {
   workspaceId: string;
   providerConnectionId: string;
   providerType: ProviderType;
   toolManifestVersionId: string;
+  policy?: Policy; // defaults to DEFAULT_POLICY
 }
 
 export interface GatewayHandle {
@@ -24,6 +40,11 @@ export interface GatewayHandle {
   server: Server;
   client: UpstreamManifestClient; // long-lived on success; caller owns shutdown
   runId?: string;
+  approve?: (approvalId: string, by: { approvedBy: string; channel: ApprovalChannel }) => Promise<ApprovalOutcome>;
+  reject?: (
+    approvalId: string,
+    by: { rejectedBy: string; channel: ApprovalChannel; reason?: string },
+  ) => Promise<ApprovalOutcome>;
 }
 
 export async function bootGateway(
@@ -77,8 +98,68 @@ export async function bootGateway(
     providerConnectionId: args.providerConnectionId,
   };
   const callCtx: GatewayCallContext = { client, store, deps, audit };
-  const server = createGatewayServer(state, callCtx);
-  return { state, server, client, runId };
+
+  const ws = args.workspaceId;
+  const policy = args.policy ?? DEFAULT_POLICY;
+  const ttls: ApprovalTtls = { approvalSeconds: 900, authorizationSeconds: 900 };
+  const run: RunContext = { runId, mode: "safe_demo" };
+  const internalCtx: InternalToolContext = {
+    store,
+    deps,
+    audit,
+    policy,
+    adapter: createSimulatorAdapter({ hash: deps.hash }),
+    run,
+    cache: createDecisionCache(),
+    ttls,
+  };
+
+  async function approve(
+    approvalId: string,
+    by: { approvedBy: string; channel: ApprovalChannel },
+  ): Promise<ApprovalOutcome> {
+    const all = await store.read(ws);
+    const approvalState = approvalProjection(eventsForApproval(all, approvalId));
+    const head = await store.head(ws);
+    const res = approveApproval(
+      {
+        workspaceId: ws,
+        approvalState,
+        approvedBy: by.approvedBy,
+        approvalChannel: by.channel,
+        authorizationExpiresAt: isoPlusSeconds(deps.clock.now(), ttls.authorizationSeconds),
+        previousEventHash: head,
+      },
+      deps,
+    );
+    if (res.events.length > 0) await store.append(head, res.events);
+    return res.outcome;
+  }
+
+  async function reject(
+    approvalId: string,
+    by: { rejectedBy: string; channel: ApprovalChannel; reason?: string },
+  ): Promise<ApprovalOutcome> {
+    const all = await store.read(ws);
+    const approvalState = approvalProjection(eventsForApproval(all, approvalId));
+    const head = await store.head(ws);
+    const res = rejectApproval(
+      {
+        workspaceId: ws,
+        approvalState,
+        rejectedBy: by.rejectedBy,
+        rejectionChannel: by.channel,
+        ...(by.reason !== undefined ? { reason: by.reason } : {}),
+        previousEventHash: head,
+      },
+      deps,
+    );
+    if (res.events.length > 0) await store.append(head, res.events);
+    return res.outcome;
+  }
+
+  const server = createGatewayServer(state, callCtx, internalCtx);
+  return { state, server, client, runId, approve, reject };
 }
 
 async function safeClose(client: UpstreamManifestClient): Promise<void> {
