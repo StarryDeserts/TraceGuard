@@ -9,6 +9,8 @@ import {
 } from "./upstream-client.js";
 import { buildGatewayState, degradedState, type GatewayState } from "./gateway-state.js";
 import { createGatewayServer } from "./gateway-server.js";
+import { recordRunCreated, type CallAudit } from "./tool-call-events.js";
+import type { GatewayCallContext } from "./call-handler.js";
 
 export interface BootGatewayArgs {
   workspaceId: string;
@@ -21,6 +23,7 @@ export interface GatewayHandle {
   state: GatewayState;
   server: Server;
   client: UpstreamManifestClient; // long-lived on success; caller owns shutdown
+  runId?: string;
 }
 
 export async function bootGateway(
@@ -47,14 +50,35 @@ export async function bootGateway(
   } catch (err) {
     if (err instanceof UpstreamUnavailableError || err instanceof UpstreamListToolsError) {
       await safeClose(client); // degraded: nothing to keep alive
-      state = degradedState();
-    } else {
-      await safeClose(client); // unexpected (e.g. LedgerConflictError, bug): surface it
-      throw err;
+      const degraded = degradedState();
+      const server = createGatewayServer(degraded);
+      return { state: degraded, server, client };
     }
+    await safeClose(client); // unexpected (e.g. LedgerConflictError, bug): surface it
+    throw err;
   }
-  const server = createGatewayServer(state);
-  return { state, server, client };
+
+  const runId = deps.newId.next("run");
+  const runHead = await store.head(args.workspaceId);
+  const runEvent = recordRunCreated(
+    {
+      workspaceId: args.workspaceId,
+      runId,
+      providerConnectionId: args.providerConnectionId,
+    },
+    deps,
+    runHead,
+  );
+  await store.append(runHead, [runEvent]);
+
+  const audit: CallAudit = {
+    workspaceId: args.workspaceId,
+    runId,
+    providerConnectionId: args.providerConnectionId,
+  };
+  const callCtx: GatewayCallContext = { client, store, deps, audit };
+  const server = createGatewayServer(state, callCtx);
+  return { state, server, client, runId };
 }
 
 async function safeClose(client: UpstreamManifestClient): Promise<void> {

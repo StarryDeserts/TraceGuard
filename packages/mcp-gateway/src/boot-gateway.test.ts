@@ -72,7 +72,13 @@ describe("bootGateway", () => {
     expect(client.closed).toBe(0); // D2: connection kept alive on success
 
     expect(await store.head(baseArgs.workspaceId)).not.toBeNull();
-    expect(await store.read(baseArgs.workspaceId)).toHaveLength(5); // 1 imported + 4 blocked
+    const events = await store.read(baseArgs.workspaceId);
+    expect(events).toHaveLength(6);
+    expect(handle.runId).toMatch(/^run_/);
+    const runEvent = events[5]!;
+    expect(runEvent.eventType).toBe("RunCreated");
+    expect(runEvent.aggregateType).toBe("run");
+    expect(runEvent.previousEventHash).toBe(events[4]!.eventHash);
   });
 
   it("degraded (listTools throws): empty tool list, client closed, nothing persisted", async () => {
@@ -90,6 +96,7 @@ describe("bootGateway", () => {
     expect(client.closed).toBe(1); // degraded: nothing to keep alive
 
     expect(await store.read(baseArgs.workspaceId)).toHaveLength(0);
+    expect(handle.runId).toBeUndefined();
   });
 
   it("degraded (open throws): never lists, client closed, nothing persisted", async () => {
@@ -105,5 +112,6 @@ describe("bootGateway", () => {
     expect(client.closed).toBe(1);
 
     expect(await store.read(baseArgs.workspaceId)).toHaveLength(0);
+    expect(handle.runId).toBeUndefined();
   });
 });
