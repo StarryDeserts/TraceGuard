@@ -6,6 +6,9 @@
     { "path": "../schemas" },
     { "path": "../event-ledger" },
     { "path": "../tool-manifest" },
-    { "path": "../testing-fixtures" }
+    { "path": "../testing-fixtures" },
+    { "path": "../domain" },
+    { "path": "../policy-engine" },
+    { "path": "../runtime" }
   ]
 }

@@ -10,7 +10,10 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@traceguard/schemas": "workspace:*",
     "@traceguard/event-ledger": "workspace:*",
-    "@traceguard/tool-manifest": "workspace:*"
+    "@traceguard/tool-manifest": "workspace:*",
+    "@traceguard/domain": "workspace:*",
+    "@traceguard/policy-engine": "workspace:*",
+    "@traceguard/runtime": "workspace:*"
   },
   "devDependencies": {
     "@traceguard/testing-fixtures": "workspace:*"
