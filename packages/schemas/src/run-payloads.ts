@@ -30,3 +30,14 @@ export const RunCreatedPayload = z
   })
   .strict();
 export type RunCreatedPayload = z.infer<typeof RunCreatedPayload>;
+
+export const RunStartedPayload = z
+  .object({
+    runId: z.string().min(1),
+    startedAt: IsoTimestamp,
+    agentName: z.string().min(1).optional(),
+    intent: z.string().min(1).optional(),
+    mode: z.string().min(1).optional(),
+  })
+  .strict();
+export type RunStartedPayload = z.infer<typeof RunStartedPayload>;
