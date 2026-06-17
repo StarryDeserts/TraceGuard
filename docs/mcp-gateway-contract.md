@@ -651,6 +651,8 @@ credential references
 
 ### 9.4 Handling Path: Trade-like
 
+> **3E-1 (landed):** The trade-like governance path is implemented behind the six internal `traceguard_*` tools (`start_run → record_decision → request_execution → [check_approval] → execute_authorized_action → finish_run`), not by intercepting the upstream `*_place_order` call — the raw upstream `trade_like` deny (`DECISION_ENVELOPE_REQUIRED`) is unchanged. Execution targets a **simulator** adapter. Argument JSON-Schema validation (§9.2) and result redaction (§9.3) on the forwarded path remain deferred to **3E-2**.
+
 For trade-like tools:
 
 ```text
@@ -920,6 +922,8 @@ DecisionRejected
 
 ### 12.3 `traceguard_request_execution`
 
+> **3E-1 (landed):** The policy outcome is computed at `record_decision` (inside `proposeDecision`) and **cached**; `request_execution` acts on the cached outcome — allow ⇒ issue authorization + burn + simulate execution inline; require_approval ⇒ emit `ApprovalRequested` and return non-blocking `APPROVAL_REQUIRED`; block ⇒ `POLICY_BLOCKED` (`isError:true`, `matchedRules`, `executionSent:false`). `finish_run` is idempotent against an allow path that already settled the run.
+
 Purpose:
 
 ```text
@@ -1159,6 +1163,8 @@ RunFailed
 
 ## 13. Approval Pending Semantics
 
+> **3E-1 (landed):** Human approval is **out-of-band** via the `handle.approve` / `handle.reject` operator seam on the `GatewayHandle` (a human is not the agent), deliberately **not** an MCP tool. `request_execution` never blocks; the agent resumes via `check_approval` → `execute_authorized_action` once the approval flips to `APPROVED`. The seam is an in-process function in this slice; a persistent web/telegram approval channel is later-phase.
+
 MCP clients may not support long-running approval waits uniformly. TraceGuard should support a check-and-continue model first.
 
 ------
@@ -1220,6 +1226,8 @@ Do not depend on this for v0.1.
 
 ## 14. Structured Error Codes
 
+> **3E-1 internal-tool codes:** `DECISION_INVALID`, `POLICY_BLOCKED`, `APPROVAL_REQUIRED` (a non-error `status`, `isError:false`), `APPROVAL_EXPIRED`, `AUTHORIZATION_MISSING`, `AUTHORIZATION_CONSUMED`, `ACTION_DIGEST_MISMATCH`, `EXECUTION_UNKNOWN`, `EXECUTION_FAILED`, `CAPABILITY_UNAVAILABLE`, `RUN_NOT_FOUND`. Reserved-but-unreachable in the simulator slice (all gates `false`): `SNAPSHOT_STALE`, `PROVIDER_DEGRADED`, `WORKSPACE_LOCKED`, `MANIFEST_UNAPPROVED`.
+
 | Code                         | Meaning                                           |
 | ---------------------------- | ------------------------------------------------- |
 | `TOOL_NOT_APPROVED`          | Tool is not in approved manifest                  |
@@ -1273,6 +1281,8 @@ Machine-readable fields should support UI and replay.
 ------
 
 ## 16. Event Emission
+
+> **3E-1 (landed):** The ledger is the source of truth for events; 3E-1 adds an in-memory `Map<decisionId, CachedDecision>` derived index that carries the `ActionDigestInput` base (so the action digest reproduces byte-for-byte at issue / approve / execute time) and the `policyEvaluationId`. It is rebuildable from a projection — that rebuild, plus per-approval event isolation beyond the one-decision-per-run `eventsForApproval` demo scope, is deferred to **3E-2+**.
 
 Gateway must emit events for every meaningful transition.
 
