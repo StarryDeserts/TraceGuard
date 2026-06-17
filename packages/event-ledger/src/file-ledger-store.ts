@@ -9,12 +9,24 @@ import {
   verifyChain,
 } from "./ledger-store.js";
 
+const SAFE_WORKSPACE_ID = /^[A-Za-z0-9_.-]+$/;
+
+export class LedgerStorageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LedgerStorageError";
+  }
+}
+
 export class FileLedgerStore implements LedgerStore {
   private readonly locks = new Map<string, Promise<unknown>>();
 
   constructor(private readonly dir: string) {}
 
   private fileFor(workspaceId: string): string {
+    if (workspaceId === "." || workspaceId === ".." || !SAFE_WORKSPACE_ID.test(workspaceId)) {
+      throw new LedgerStorageError(`unsafe workspaceId for file storage: ${workspaceId}`);
+    }
     return path.join(this.dir, `${workspaceId}.jsonl`);
   }
 
@@ -42,10 +54,16 @@ export class FileLedgerStore implements LedgerStore {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
       throw err;
     }
-    return raw
-      .split("\n")
-      .filter((line) => line.length > 0)
-      .map((line) => JSON.parse(line) as LedgerEvent);
+    const lines = raw.split("\n").filter((line) => line.length > 0);
+    return lines.map((line, i) => {
+      try {
+        return JSON.parse(line) as LedgerEvent;
+      } catch {
+        throw new LedgerStorageError(
+          `corrupt ledger line ${i + 1} for workspace ${workspaceId}`,
+        );
+      }
+    });
   }
 
   async head(workspaceId: string): Promise<string | null> {

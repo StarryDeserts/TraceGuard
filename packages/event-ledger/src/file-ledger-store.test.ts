@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { FileLedgerStore } from "./file-ledger-store.js";
+import { FileLedgerStore, LedgerStorageError } from "./file-ledger-store.js";
 import { runLedgerStoreContract, chainOf, idGen } from "./ledger-store-conformance.test.js";
 
 const dirs: string[] = [];
@@ -52,5 +52,23 @@ describe("FileLedgerStore durability", () => {
 
     expect(await second.read("ws_1")).toHaveLength(3);
     expect(await second.head("ws_1")).toBe(batch2[0]!.eventHash);
+  });
+});
+
+describe("FileLedgerStore filesystem safety", () => {
+  it("rejects a workspaceId that could escape the storage directory", async () => {
+    const store = await freshFileStore();
+    await expect(store.head("../evil")).rejects.toBeInstanceOf(LedgerStorageError);
+    await expect(store.head("a/b")).rejects.toBeInstanceOf(LedgerStorageError);
+    await expect(store.read("..")).rejects.toBeInstanceOf(LedgerStorageError);
+    await expect(store.read(".")).rejects.toBeInstanceOf(LedgerStorageError);
+  });
+
+  it("raises LedgerStorageError on a corrupt ledger line", async () => {
+    const dir = await freshDir();
+    const store = new FileLedgerStore(dir);
+    await fs.writeFile(path.join(dir, "ws_1.jsonl"), "{ not valid json\n", "utf8");
+    await expect(store.head("ws_1")).rejects.toBeInstanceOf(LedgerStorageError);
+    await expect(store.read("ws_1")).rejects.toBeInstanceOf(LedgerStorageError);
   });
 });
