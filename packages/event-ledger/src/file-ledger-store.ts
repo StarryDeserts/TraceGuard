@@ -10,10 +10,28 @@ import {
 } from "./ledger-store.js";
 
 export class FileLedgerStore implements LedgerStore {
+  private readonly locks = new Map<string, Promise<unknown>>();
+
   constructor(private readonly dir: string) {}
 
   private fileFor(workspaceId: string): string {
     return path.join(this.dir, `${workspaceId}.jsonl`);
+  }
+
+  // Serialize the read-head→write window per workspace so two concurrent
+  // appends at the same head cannot both pass the optimistic-concurrency
+  // check and fork the chain. In-process only (one gateway owns the dir).
+  private withLock<T>(workspaceId: string, fn: () => Promise<T>): Promise<T> {
+    const prior = this.locks.get(workspaceId) ?? Promise.resolve();
+    const next = prior.then(fn, fn);
+    this.locks.set(
+      workspaceId,
+      next.then(
+        () => undefined,
+        () => undefined,
+      ),
+    );
+    return next;
   }
 
   private async readEvents(workspaceId: string): Promise<LedgerEvent[]> {
@@ -49,21 +67,24 @@ export class FileLedgerStore implements LedgerStore {
         throw new LedgerChainError("all events in a batch must share one workspaceId");
       }
     }
-    const existing = await this.readEvents(workspaceId);
-    const currentHead = existing.length === 0 ? null : existing[existing.length - 1]!.eventHash;
-    if (currentHead !== expectedHead) {
-      throw new LedgerConflictError(expectedHead, currentHead);
-    }
-    verifyChain(events, currentHead);
+    return this.withLock(workspaceId, async () => {
+      const existing = await this.readEvents(workspaceId);
+      const currentHead =
+        existing.length === 0 ? null : existing[existing.length - 1]!.eventHash;
+      if (currentHead !== expectedHead) {
+        throw new LedgerConflictError(expectedHead, currentHead);
+      }
+      verifyChain(events, currentHead);
 
-    const payload = events.map((e) => canonicalJson(e)).join("\n") + "\n";
-    await fs.mkdir(this.dir, { recursive: true });
-    const handle = await fs.open(this.fileFor(workspaceId), "a");
-    try {
-      await handle.appendFile(payload, "utf8");
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
+      const payload = events.map((e) => canonicalJson(e)).join("\n") + "\n";
+      await fs.mkdir(this.dir, { recursive: true });
+      const handle = await fs.open(this.fileFor(workspaceId), "a");
+      try {
+        await handle.appendFile(payload, "utf8");
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+    });
   }
 }

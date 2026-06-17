@@ -117,6 +117,20 @@ export function runLedgerStoreContract(
     expect(stored!.payload).toEqual({ i: 0 });
     expect(stored!.eventHash).toBe(originalHead);
   });
+
+  it("serializes concurrent appends at the same head (one wins, one conflicts)", async () => {
+    const store = await makeStore();
+    const results = await Promise.allSettled([
+      store.append(null, chainOf(null, 1, idGen())),
+      store.append(null, chainOf(null, 1, idGen())),
+    ]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(LedgerConflictError);
+    expect(await store.read("ws_1")).toHaveLength(1);
+  });
 }
 
 describe("LedgerStore conformance: InMemoryLedgerStore", () => {
