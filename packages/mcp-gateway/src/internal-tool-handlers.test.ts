@@ -1,20 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { SystemClock, SystemIdGen, sha256hex, InMemoryLedgerStore } from "@traceguard/event-ledger";
+import { SystemClock, SystemIdGen, sha256hex, InMemoryLedgerStore, approvalProjection } from "@traceguard/event-ledger";
 import { createSimulatorAdapter } from "@traceguard/runtime";
+import { approveApproval } from "@traceguard/domain";
 import type { GatewayState } from "./gateway-state.js";
 import { DEFAULT_POLICY } from "./default-policy.js";
 import { createDecisionCache } from "./decision-cache.js";
+import { isoPlusSeconds } from "./evaluation-context.js";
 import type { InternalToolContext } from "./internal-tool-context.js";
-import { dispatchInternalTool } from "./internal-tool-handlers.js";
+import { dispatchInternalTool, eventsForApproval } from "./internal-tool-handlers.js";
 
 function gatewayState(): GatewayState {
   return { servedTools: [], route: new Map(), manifestHash: "a".repeat(64), toolCount: 0, degraded: false };
 }
 
-function context(): InternalToolContext {
+function context(clock: { now: () => string } = new SystemClock()): InternalToolContext {
   return {
     store: new InMemoryLedgerStore(),
-    deps: { clock: new SystemClock(), newId: new SystemIdGen(), hash: sha256hex },
+    deps: { clock, newId: new SystemIdGen(), hash: sha256hex },
     audit: { workspaceId: "ws_demo", runId: "run_demo", providerConnectionId: "pc_bitget" },
     policy: DEFAULT_POLICY,
     adapter: createSimulatorAdapter({ hash: sha256hex }),
@@ -38,6 +40,48 @@ async function record(ctx: InternalToolContext, state: GatewayState, over: Recor
     evidenceRefs: ["ev:1"],
     ...over,
   });
+}
+
+function mutableClock(instant = "2026-06-08T00:00:00.000Z") {
+  let t = instant;
+  return { now: () => t, set: (next: string) => void (t = next) };
+}
+
+// Mirrors the boot-gateway operator seam (handle.approve): out-of-band human approval.
+async function approve(ctx: InternalToolContext, approvalId: string): Promise<string> {
+  const ws = ctx.audit.workspaceId;
+  const approvalState = approvalProjection(eventsForApproval(await ctx.store.read(ws), approvalId));
+  const head = await ctx.store.head(ws);
+  const res = approveApproval(
+    {
+      workspaceId: ws,
+      approvalState,
+      approvedBy: "ops",
+      approvalChannel: "web",
+      authorizationExpiresAt: isoPlusSeconds(ctx.deps.clock.now(), ctx.ttls.authorizationSeconds),
+      previousEventHash: head,
+    },
+    ctx.deps,
+  );
+  if (res.events.length > 0) await ctx.store.append(head, res.events);
+  return res.outcome;
+}
+
+// Drives start_run -> record(approval-sized) -> request_execution -> approve -> APPROVED.
+async function toApproved(ctx: InternalToolContext, state: GatewayState) {
+  await dispatchInternalTool(ctx, state, "traceguard_start_run", { runId: "run_demo" });
+  const rec = await record(ctx, state, { requestedNotionalUsdt: "5000", requestedLeverage: "2" });
+  const decisionId = tg(rec).decisionId as string;
+  const exec = await dispatchInternalTool(ctx, state, "traceguard_request_execution", {
+    runId: "run_demo",
+    decisionId,
+    executionAdapter: "simulator",
+  });
+  const approvalId = tg(exec).approvalId as string;
+  expect(await approve(ctx, approvalId)).toBe("approved");
+  const poll = await dispatchInternalTool(ctx, state, "traceguard_check_approval", { approvalId });
+  expect(tg(poll).status).toBe("APPROVED");
+  return { decisionId, approvalId, authorizationId: tg(poll).authorizationId as string };
 }
 
 describe("dispatchInternalTool", () => {
@@ -139,5 +183,71 @@ describe("dispatchInternalTool", () => {
     const ctx = context();
     const r = await dispatchInternalTool(ctx, gatewayState(), "traceguard_record_decision", { runId: "run_other" });
     expect(tg(r).errorCode).toBe("RUN_NOT_FOUND");
+  });
+});
+
+describe("dispatchInternalTool — authorization-use guards (§11 criterion 4)", () => {
+  it("a second execute_authorized_action on the same authorization returns AUTHORIZATION_CONSUMED", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    const { decisionId, authorizationId } = await toApproved(ctx, state);
+
+    const first = await dispatchInternalTool(ctx, state, "traceguard_execute_authorized_action", {
+      runId: "run_demo",
+      decisionId,
+      authorizationId,
+      executionAdapter: "simulator",
+    });
+    expect(tg(first).status).toBe("EXECUTED");
+
+    const second = await dispatchInternalTool(ctx, state, "traceguard_execute_authorized_action", {
+      runId: "run_demo",
+      decisionId,
+      authorizationId,
+      executionAdapter: "simulator",
+    });
+    expect((second as { isError?: boolean }).isError).toBe(true);
+    expect(tg(second).errorCode).toBe("AUTHORIZATION_CONSUMED");
+  });
+
+  it("a mismatched action digest returns ACTION_DIGEST_MISMATCH", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    const { decisionId, authorizationId } = await toApproved(ctx, state);
+
+    // Tamper the cached digest base after the authorization was bound to the original digest.
+    const cached = ctx.cache.decisions.get(decisionId)!;
+    ctx.cache.decisions.set(decisionId, {
+      ...cached,
+      digestBase: { ...cached.digestBase, requestedNotionalUsdt: "9999" },
+    });
+
+    const ex = await dispatchInternalTool(ctx, state, "traceguard_execute_authorized_action", {
+      runId: "run_demo",
+      decisionId,
+      authorizationId,
+      executionAdapter: "simulator",
+    });
+    expect((ex as { isError?: boolean }).isError).toBe(true);
+    expect(tg(ex).errorCode).toBe("ACTION_DIGEST_MISMATCH");
+  });
+
+  it("a lapsed authorization returns APPROVAL_EXPIRED", async () => {
+    const clock = mutableClock();
+    const ctx = context(clock);
+    const state = gatewayState();
+    const { decisionId, authorizationId } = await toApproved(ctx, state);
+
+    // Advance past the authorization's expiry window before executing.
+    clock.set(isoPlusSeconds(clock.now(), ctx.ttls.authorizationSeconds + 60));
+
+    const ex = await dispatchInternalTool(ctx, state, "traceguard_execute_authorized_action", {
+      runId: "run_demo",
+      decisionId,
+      authorizationId,
+      executionAdapter: "simulator",
+    });
+    expect((ex as { isError?: boolean }).isError).toBe(true);
+    expect(tg(ex).errorCode).toBe("APPROVAL_EXPIRED");
   });
 });
