@@ -3,6 +3,7 @@ export * from "./hashing.js";
 export * from "./clock-id.js";
 export * from "./make-event.js";
 export * from "./ledger-store.js";
+export * from "./file-ledger-store.js";
 export * from "./run-status-projection.js";
 export * from "./approval-projection.js";
 export * from "./authorization-projection.js";

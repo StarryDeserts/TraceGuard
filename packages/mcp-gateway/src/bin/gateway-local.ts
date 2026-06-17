@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
-import { SystemClock, SystemIdGen, sha256hex, InMemoryLedgerStore } from "@traceguard/event-ledger";
+import { SystemClock, SystemIdGen, sha256hex } from "@traceguard/event-ledger";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StdioUpstreamClient } from "../stdio-upstream-client.js";
 import { bootGateway } from "../boot-gateway.js";
+import { resolveLedgerStore } from "../ledger-selection.js";
 
 async function main(): Promise<void> {
   const newId = new SystemIdGen();
@@ -13,7 +14,7 @@ async function main(): Promise<void> {
     command: process.execPath,
     args: [serverEntry, "--paper-trading"],
   });
-  const store = new InMemoryLedgerStore();
+  const store = resolveLedgerStore(process.env);
 
   const { server, state, client: live } = await bootGateway(
     {
@@ -32,6 +33,9 @@ async function main(): Promise<void> {
     `[gateway-local] served tools: ${state.servedTools.length}${state.degraded ? " (DEGRADED)" : ""}`,
   );
   console.error(`[gateway-local] manifestHash: ${state.manifestHash ?? "—"}`);
+  if (process.env.TRACEGUARD_LEDGER_DIR) {
+    console.error(`[gateway-local] durable ledger dir: ${process.env.TRACEGUARD_LEDGER_DIR}`);
+  }
 
   await server.connect(new StdioServerTransport());
 
