@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildSpotOrderArgs, parseOrderId } from "./bitget-live-adapter.js";
-import type { DecisionProposedPayload } from "@traceguard/schemas";
+import { buildSpotOrderArgs, parseOrderId, createBitgetLiveAdapter } from "./bitget-live-adapter.js";
+import type { UpstreamCaller, UpstreamCallResult } from "./bitget-live-adapter.js";
+import type { DecisionProposedPayload, LedgerEvent } from "@traceguard/schemas";
+import type { ExecutionRequest } from "@traceguard/domain";
+import type { LedgerStore } from "@traceguard/event-ledger";
 
 function decision(over: Partial<DecisionProposedPayload> = {}): DecisionProposedPayload {
   return {
@@ -76,5 +79,150 @@ describe("parseOrderId", () => {
   it("returns undefined when no order id is present", () => {
     expect(parseOrderId({ structuredContent: {} })).toBeUndefined();
     expect(parseOrderId({})).toBeUndefined();
+  });
+});
+
+function decisionEvent(decisionId: string, runId: string, payload: DecisionProposedPayload): LedgerEvent {
+  return { eventType: "DecisionProposed", aggregateId: decisionId, runId, payload } as unknown as LedgerEvent;
+}
+
+function fakeStore(events: LedgerEvent[]): LedgerStore {
+  return {
+    async read() {
+      return events;
+    },
+    async head() {
+      return null;
+    },
+    async append() {},
+  };
+}
+
+function caller(impl: (name: string, args: Record<string, unknown>) => UpstreamCallResult | Promise<UpstreamCallResult>): UpstreamCaller {
+  return {
+    async callTool(name, args) {
+      return impl(name, args);
+    },
+  };
+}
+
+function request(over: Partial<ExecutionRequest> = {}): ExecutionRequest {
+  return {
+    executionId: "exec_1",
+    runId: "run_1",
+    decisionId: "dec_1",
+    authorizationId: "authz_1",
+    actionDigest: "d".repeat(64),
+    idempotencyKey: "idem_1",
+    requestRef: "ref_1",
+    requestHash: "rh_1",
+    ...over,
+  };
+}
+
+const hash = (s: string): string => `H:${s}`;
+
+function adapterDeps(events: LedgerEvent[], client: UpstreamCaller, timeoutMs?: number) {
+  return { store: fakeStore(events), client, workspaceId: "ws_1", hash, ...(timeoutMs !== undefined ? { timeoutMs } : {}) };
+}
+
+describe("createBitgetLiveAdapter", () => {
+  const seeded = (over: Partial<DecisionProposedPayload> = {}) => [
+    decisionEvent("dec_1", "run_1", {
+      decisionId: "dec_1",
+      runId: "run_1",
+      envelopeVersion: 1,
+      instrument: "BTCUSDT",
+      marketType: "spot",
+      action: "buy",
+      thesis: "t",
+      evidenceRefs: [],
+      decisionHash: "h".repeat(64),
+      requestedQuantity: "0.5",
+      ...over,
+    }),
+  ];
+
+  it("submits the mapped spot order and returns a completed submitted receipt", async () => {
+    let captured: { name: string; args: Record<string, unknown> } | undefined;
+    const client = caller((name, args) => {
+      captured = { name, args };
+      return { structuredContent: { orderId: "OID-9" } };
+    });
+    const adapter = createBitgetLiveAdapter(adapterDeps(seeded(), client));
+
+    const result = await adapter.call(request());
+
+    expect(captured).toEqual({
+      name: "spot_place_order",
+      args: { symbol: "BTCUSDT", side: "buy", orderType: "market", size: "0.5" },
+    });
+    expect(result).toEqual({
+      kind: "completed",
+      finalStatus: "submitted",
+      receiptRef: "receipt:bitget:OID-9",
+      receiptHash: "H:receipt:bitget:OID-9:rh_1",
+      upstreamRef: "OID-9",
+    });
+  });
+
+  it("throws when the DecisionProposed intent cannot be found (pre-submit, fail closed)", async () => {
+    const adapter = createBitgetLiveAdapter(adapterDeps([], caller(() => ({ structuredContent: { orderId: "x" } }))));
+    await expect(adapter.call(request())).rejects.toThrow("decision_intent_not_found");
+  });
+
+  it("throws when the upstream returns an error result (pre-submit reject)", async () => {
+    const adapter = createBitgetLiveAdapter(adapterDeps(seeded(), caller(() => ({ isError: true }))));
+    await expect(adapter.call(request())).rejects.toThrow("upstream_rejected");
+  });
+
+  it("returns unknown/receipt_lookup_failed when no order id comes back", async () => {
+    const adapter = createBitgetLiveAdapter(adapterDeps(seeded(), caller(() => ({ structuredContent: {} }))));
+    expect(await adapter.call(request())).toEqual({ kind: "unknown", reasonCode: "receipt_lookup_failed" });
+  });
+
+  it("returns unknown/timeout_after_submit when the upstream call exceeds the timeout", async () => {
+    const adapter = createBitgetLiveAdapter(
+      adapterDeps(seeded(), caller(() => new Promise<UpstreamCallResult>(() => {})), 5),
+    );
+    expect(await adapter.call(request())).toEqual({ kind: "unknown", reasonCode: "timeout_after_submit" });
+  });
+
+  it("returns unknown/connection_lost_after_submit when the upstream call rejects", async () => {
+    const adapter = createBitgetLiveAdapter(
+      adapterDeps(seeded(), caller(() => Promise.reject(new Error("socket hang up")))),
+    );
+    expect(await adapter.call(request())).toEqual({ kind: "unknown", reasonCode: "connection_lost_after_submit" });
+  });
+
+  it("selects the decision matching request.decisionId when the ledger holds several", async () => {
+    // A non-matching decision is seeded FIRST, so a naive "take the first
+    // DecisionProposed" lookup would submit the wrong order and fail this test.
+    const events = [
+      decisionEvent("dec_other", "run_1", {
+        decisionId: "dec_other",
+        runId: "run_1",
+        envelopeVersion: 1,
+        instrument: "ETHUSDT",
+        marketType: "spot",
+        action: "sell",
+        thesis: "t",
+        evidenceRefs: [],
+        decisionHash: "h".repeat(64),
+        requestedQuantity: "2",
+      }),
+      ...seeded(),
+    ];
+    let captured: { name: string; args: Record<string, unknown> } | undefined;
+    const client = caller((name, args) => {
+      captured = { name, args };
+      return { structuredContent: { orderId: "OID-7" } };
+    });
+    const adapter = createBitgetLiveAdapter(adapterDeps(events, client));
+
+    await adapter.call(request({ decisionId: "dec_1" }));
+
+    expect(captured?.args.symbol).toBe("BTCUSDT");
+    expect(captured?.args.side).toBe("buy");
   });
 });

@@ -1,3 +1,5 @@
+import type { ExecutionAdapter, ExecutionRequest, ExecutionResult } from "@traceguard/domain";
+import type { LedgerStore } from "@traceguard/event-ledger";
 import type { DecisionProposedPayload } from "@traceguard/schemas";
 
 export interface UpstreamCallResult {
@@ -43,4 +45,83 @@ export function parseOrderId(result: UpstreamCallResult): string | undefined {
   if (typeof candidate === "string" && candidate.length > 0) return candidate;
   if (typeof candidate === "number") return String(candidate);
   return undefined;
+}
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+class TimeoutError extends Error {
+  constructor() {
+    super("upstream_timeout");
+    this.name = "TimeoutError";
+  }
+}
+
+function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new TimeoutError()), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
+}
+
+async function findDecisionProposed(
+  store: LedgerStore,
+  workspaceId: string,
+  runId: string,
+  decisionId: string,
+): Promise<DecisionProposedPayload | undefined> {
+  const events = await store.read(workspaceId, runId);
+  const event = events.find((e) => e.eventType === "DecisionProposed" && e.aggregateId === decisionId);
+  return event?.payload as DecisionProposedPayload | undefined;
+}
+
+export interface BitgetLiveAdapterDeps {
+  store: LedgerStore;
+  client: UpstreamCaller;
+  workspaceId: string;
+  hash: (input: string) => string;
+  timeoutMs?: number;
+}
+
+export function createBitgetLiveAdapter(deps: BitgetLiveAdapterDeps): ExecutionAdapter {
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  return {
+    adapterType: "bitget_live",
+    async call(request: ExecutionRequest): Promise<ExecutionResult> {
+      // Recover the order intent from the rich DecisionProposed event (Option A):
+      // the digest-centric ExecutionRequest never carries the order body.
+      const decision = await findDecisionProposed(deps.store, deps.workspaceId, request.runId, request.decisionId);
+      if (decision === undefined) throw new Error("decision_intent_not_found");
+
+      // Pre-submit mapping failures throw -> orchestrator -> RunFailed -> EXECUTION_FAILED.
+      const args = buildSpotOrderArgs(decision);
+
+      let result: UpstreamCallResult;
+      try {
+        result = await raceWithTimeout(deps.client.callTool("spot_place_order", args), timeoutMs);
+      } catch (err) {
+        // The order may already be live: never retry, surface for reconciliation.
+        return err instanceof TimeoutError
+          ? { kind: "unknown", reasonCode: "timeout_after_submit" }
+          : { kind: "unknown", reasonCode: "connection_lost_after_submit" };
+      }
+
+      // An explicit error result is a clean pre-submit reject (nothing was placed).
+      if (result.isError === true) throw new Error("upstream_rejected");
+
+      const orderId = parseOrderId(result);
+      // Submitted but we cannot read the receipt: post-submit ambiguity, not a retry.
+      if (orderId === undefined) return { kind: "unknown", reasonCode: "receipt_lookup_failed" };
+
+      return {
+        kind: "completed",
+        finalStatus: "submitted",
+        receiptRef: `receipt:bitget:${orderId}`,
+        receiptHash: deps.hash(`receipt:bitget:${orderId}:${request.requestHash}`),
+        upstreamRef: orderId,
+      };
+    },
+  };
 }
