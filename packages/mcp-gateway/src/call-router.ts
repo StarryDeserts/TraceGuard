@@ -5,7 +5,8 @@ export type CallDenyCode =
   | "UNKNOWN_TOOL"
   | "TOOL_FROZEN"
   | "TOOL_BLOCKED"
-  | "DECISION_ENVELOPE_REQUIRED";
+  | "DECISION_ENVELOPE_REQUIRED"
+  | "ARGUMENTS_INVALID";
 
 export type RouteOutcome =
   | { kind: "forward"; riskClass: RiskClass }

@@ -26,6 +26,7 @@ import { createDecisionCache } from "./decision-cache.js";
 import { isoPlusSeconds } from "./evaluation-context.js";
 import { eventsForApproval } from "./internal-tool-handlers.js";
 import type { ApprovalTtls, InternalToolContext, RunContext } from "./internal-tool-context.js";
+import { createArgValidator } from "./arg-validation.js";
 
 export interface BootGatewayArgs {
   workspaceId: string;
@@ -97,7 +98,13 @@ export async function bootGateway(
     runId,
     providerConnectionId: args.providerConnectionId,
   };
-  const callCtx: GatewayCallContext = { client, store, deps, audit };
+  const callCtx: GatewayCallContext = {
+    client,
+    store,
+    deps,
+    audit,
+    argValidator: createArgValidator(state.servedTools),
+  };
 
   const ws = args.workspaceId;
   const policy = args.policy ?? DEFAULT_POLICY;

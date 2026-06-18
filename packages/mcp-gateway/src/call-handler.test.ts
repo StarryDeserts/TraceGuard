@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { InMemoryLedgerStore, sha256hex } from "@traceguard/event-ledger";
+import { InMemoryLedgerStore, sha256hex, canonicalJson } from "@traceguard/event-ledger";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { LedgerEvent, RiskClass } from "@traceguard/schemas";
 import type { ToolStatus } from "@traceguard/event-ledger";
@@ -8,6 +8,7 @@ import type { GatewayState } from "./gateway-state.js";
 import type { UpstreamManifestClient } from "./upstream-client.js";
 import { recordRunCreated, type CallAudit } from "./tool-call-events.js";
 import { handleToolCall, type GatewayCallContext } from "./call-handler.js";
+import type { ArgValidator } from "./arg-validation.js";
 
 const AUDIT: CallAudit = {
   workspaceId: "ws_demo",
@@ -49,11 +50,12 @@ function stateWith(rows: Array<[string, ToolStatus, RiskClass]>): GatewayState {
 async function seededCtx(
   client: UpstreamManifestClient,
   d: ReturnType<typeof deps>,
+  argValidator: ArgValidator = { validate: () => ({ ok: true }) },
 ): Promise<{ ctx: GatewayCallContext; store: InMemoryLedgerStore }> {
   const store = new InMemoryLedgerStore();
   const run = recordRunCreated(AUDIT, d, null);
   await store.append(null, [run]);
-  return { ctx: { client, store, deps: d, audit: AUDIT }, store };
+  return { ctx: { client, store, deps: d, audit: AUDIT, argValidator }, store };
 }
 
 function types(events: ReadonlyArray<LedgerEvent<unknown>>): string[] {
@@ -158,5 +160,60 @@ describe("handleToolCall", () => {
     expect(tg(res).errorCode).toBe("TOOL_CALL_NOT_AVAILABLE");
     const events = await store.read(AUDIT.workspaceId);
     expect(types(events)).toEqual(["RunCreated"]);
+  });
+
+  it("denies invalid args with ARGUMENTS_INVALID and does not forward", async () => {
+    const d = deps();
+    const client = new FakeUpstreamClient({ kind: "throw" });
+    const failing: ArgValidator = {
+      validate: () => ({ ok: false, errors: ["/symbol must be string"] }),
+    };
+    const { ctx, store } = await seededCtx(client, d, failing);
+    const state = stateWith([["spot_get_ticker", "active", "public_read"]]);
+
+    const res = await handleToolCall(state, ctx, "spot_get_ticker", { symbol: 123 });
+
+    expect(tg(res).errorCode).toBe("ARGUMENTS_INVALID");
+    expect(client.callToolCalls).toEqual([]);
+    const events = await store.read(AUDIT.workspaceId);
+    expect(types(events)).toEqual(["RunCreated", "ToolCallDenied"]);
+  });
+
+  it("redacts credential keys from the forwarded result", async () => {
+    const d = deps();
+    const result = {
+      content: [{ type: "text", text: "ok" }],
+      structuredContent: { apiKey: "live-secret", balance: "100" },
+    } as unknown as CallToolResult;
+    const client = new FakeUpstreamClient({ kind: "result", result });
+    const { ctx } = await seededCtx(client, d);
+    const state = stateWith([["spot_get_ticker", "active", "public_read"]]);
+
+    const res = await handleToolCall(state, ctx, "spot_get_ticker", { symbol: "BTCUSDT" });
+
+    const sc = (res as unknown as { structuredContent: { apiKey: string; balance: string } })
+      .structuredContent;
+    expect(sc.apiKey).toBe("[REDACTED]");
+    expect(sc.balance).toBe("100");
+  });
+
+  it("records the ToolCallCompleted digest over the raw (unredacted) result", async () => {
+    const d = deps();
+    const result = {
+      content: [{ type: "text", text: "ok" }],
+      structuredContent: { apiKey: "live-secret" },
+    } as unknown as CallToolResult;
+    const client = new FakeUpstreamClient({ kind: "result", result });
+    const { ctx, store } = await seededCtx(client, d);
+    const state = stateWith([["spot_get_ticker", "active", "public_read"]]);
+
+    await handleToolCall(state, ctx, "spot_get_ticker", { symbol: "BTCUSDT" });
+
+    const events = await store.read(AUDIT.workspaceId);
+    const completed = events.find((e) => e.eventType === "ToolCallCompleted") as
+      | LedgerEvent<{ resultDigest: string }>
+      | undefined;
+    expect(completed).toBeDefined();
+    expect(completed!.payload.resultDigest).toBe(sha256hex(canonicalJson(result)));
   });
 });

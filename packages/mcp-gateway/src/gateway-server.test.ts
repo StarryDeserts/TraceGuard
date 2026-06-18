@@ -15,12 +15,15 @@ import { createSimulatorAdapter } from "@traceguard/runtime";
 import { DEFAULT_POLICY } from "./default-policy.js";
 import { createDecisionCache } from "./decision-cache.js";
 import type { InternalToolContext } from "./internal-tool-context.js";
+import type { ArgValidator } from "./arg-validation.js";
 
 const AUDIT: CallAudit = {
   workspaceId: "ws_demo",
   runId: "run_1",
   providerConnectionId: "pc_bitget",
 };
+
+const PASS_VALIDATOR: ArgValidator = { validate: () => ({ ok: true }) };
 
 class FakeUpstreamClient implements UpstreamManifestClient {
   async open(): Promise<void> {}
@@ -57,7 +60,7 @@ async function makeCtx(d: ReturnType<typeof deps>): Promise<GatewayCallContext> 
   const store = new InMemoryLedgerStore();
   const run = recordRunCreated(AUDIT, d, null);
   await store.append(null, [run]);
-  return { client: new FakeUpstreamClient(), store, deps: d, audit: AUDIT };
+  return { client: new FakeUpstreamClient(), store, deps: d, audit: AUDIT, argValidator: PASS_VALIDATOR };
 }
 
 async function connectedClient(
@@ -79,7 +82,7 @@ async function makeInternalCtx(
   const store = new InMemoryLedgerStore();
   const run = recordRunCreated(AUDIT, d, null);
   await store.append(null, [run]);
-  const callCtx: GatewayCallContext = { client: new FakeUpstreamClient(), store, deps: d, audit: AUDIT };
+  const callCtx: GatewayCallContext = { client: new FakeUpstreamClient(), store, deps: d, audit: AUDIT, argValidator: PASS_VALIDATOR };
   const internalCtx: InternalToolContext = {
     store,
     deps: d,

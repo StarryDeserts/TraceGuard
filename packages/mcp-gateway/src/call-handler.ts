@@ -12,12 +12,15 @@ import {
   recordIncidentOpened,
   type CallAudit,
 } from "./tool-call-events.js";
+import type { ArgValidator } from "./arg-validation.js";
+import { redactResult, AGENT_CREDENTIAL_PROFILE } from "./result-redaction.js";
 
 export interface GatewayCallContext {
   client: UpstreamManifestClient;
   store: LedgerStore;
   deps: ReconcileDeps;
   audit: CallAudit;
+  argValidator: ArgValidator;
 }
 
 export type CallErrorCode = CallDenyCode | "TOOL_CALL_NOT_AVAILABLE" | "UPSTREAM_CALL_FAILED";
@@ -34,6 +37,7 @@ const DENY_TEXT: Record<CallErrorCode, string> = {
   TOOL_BLOCKED: "This tool is blocked by policy; a security incident has been recorded.",
   DECISION_ENVELOPE_REQUIRED:
     "This action requires an approved Decision Envelope before it can execute.",
+  ARGUMENTS_INVALID: "The arguments did not match the tool's approved schema.",
   TOOL_CALL_NOT_AVAILABLE: "Tool execution is not available because the gateway booted degraded.",
   UPSTREAM_CALL_FAILED: "The upstream provider call failed; the request was not completed.",
 };
@@ -82,6 +86,22 @@ export async function handleToolCall(
     return denyCall(outcome.code, name);
   }
 
+  const validation = ctx.argValidator.validate(name, args);
+  if (!validation.ok) {
+    const deniedHead = await ctx.store.head(ctx.audit.workspaceId);
+    const denied = recordToolCallDenied(ctx.audit, ctx.deps, deniedHead, {
+      toolName: name,
+      denyCode: "ARGUMENTS_INVALID",
+      riskClass: outcome.riskClass,
+    });
+    await ctx.store.append(deniedHead, [denied]);
+    return denyCall(
+      "ARGUMENTS_INVALID",
+      name,
+      `${DENY_TEXT.ARGUMENTS_INVALID} ${validation.errors.slice(0, 5).join("; ")}`.trim(),
+    );
+  }
+
   const argumentsDigest = ctx.deps.hash(canonicalJson(args));
   const requestedHead = await ctx.store.head(ctx.audit.workspaceId);
   const requested = recordToolCallRequested(ctx.audit, ctx.deps, requestedHead, {
@@ -98,7 +118,7 @@ export async function handleToolCall(
       result,
     });
     await ctx.store.append(requested.eventHash, [completed]);
-    return result;
+    return redactResult(result, AGENT_CREDENTIAL_PROFILE);
   } catch {
     const failed = recordToolCallFailed(ctx.audit, ctx.deps, requested.eventHash, {
       toolName: name,
