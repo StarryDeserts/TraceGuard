@@ -41,6 +41,35 @@ describe("redactResult", () => {
     });
   });
 
+  it("redacts the expanded exchange-credential keys (secret/apiSecret/signature/etc.)", () => {
+    const input = {
+      secret: "a",
+      apiSecret: "b",
+      api_secret: "c",
+      signature: "d",
+      sign: "e",
+      mnemonic: "f",
+      seed: "g",
+      seedPhrase: "h",
+      privKey: "i",
+      wsToken: "j",
+      listenKey: "k",
+    };
+    expect(redactResult(input, P)).toEqual({
+      secret: "[REDACTED]",
+      apiSecret: "[REDACTED]",
+      api_secret: "[REDACTED]",
+      signature: "[REDACTED]",
+      sign: "[REDACTED]",
+      mnemonic: "[REDACTED]",
+      seed: "[REDACTED]",
+      seedPhrase: "[REDACTED]",
+      privKey: "[REDACTED]",
+      wsToken: "[REDACTED]",
+      listenKey: "[REDACTED]",
+    });
+  });
+
   it("redacts nested and array-embedded secrets at any depth", () => {
     const input = {
       data: { account: { apiKey: "x" } },

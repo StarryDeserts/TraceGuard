@@ -8,14 +8,25 @@ export function normalizeKey(key: string): string {
 }
 
 export const AGENT_CREDENTIAL_PROFILE: RedactionProfile = {
+  // Keys are pre-normalized (lowercased, `_`/`-` stripped) — see normalizeKey.
   sensitiveKeys: new Set([
     "apikey",
     "secretkey",
+    "secret",
+    "apisecret",
     "passphrase",
     "authorization",
     "privatekey",
+    "privkey",
     "credential",
     "credentialref",
+    "signature",
+    "sign",
+    "mnemonic",
+    "seed",
+    "seedphrase",
+    "wstoken",
+    "listenkey",
   ]),
   placeholder: "[REDACTED]",
 };
