@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import Ajv from "ajv";
+import { Ajv } from "ajv";
 import { createArgValidator } from "./arg-validation.js";
 import type { ServedTool } from "./gateway-state.js";
 
@@ -58,9 +58,13 @@ describe("createArgValidator", () => {
     expect(v.validate("empty", { anything: true })).toEqual({ ok: true });
   });
 
-  it("skips (does not throw) when a schema cannot compile", () => {
+  it("skips (does not throw) when a schema cannot compile, logging once", () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const v = createArgValidator([tool("broken", { $ref: "#/$defs/missing" })]);
     expect(v.validate("broken", { anything: true })).toEqual({ ok: true });
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]?.[0]).toMatch(/uncompilable inputSchema/);
+    errSpy.mockRestore();
   });
 
   it("returns ok for a tool name it has never seen", () => {
