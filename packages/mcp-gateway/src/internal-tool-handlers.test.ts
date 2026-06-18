@@ -7,7 +7,7 @@ import { DEFAULT_POLICY } from "./default-policy.js";
 import { createDecisionCache } from "./decision-cache.js";
 import { isoPlusSeconds } from "./evaluation-context.js";
 import type { InternalToolContext } from "./internal-tool-context.js";
-import { dispatchInternalTool, eventsForApproval } from "./internal-tool-handlers.js";
+import { dispatchInternalTool, eventsForApproval, mapExecReason } from "./internal-tool-handlers.js";
 
 function gatewayState(): GatewayState {
   return { servedTools: [], route: new Map(), manifestHash: "a".repeat(64), toolCount: 0, degraded: false };
@@ -186,6 +186,35 @@ describe("dispatchInternalTool", () => {
   });
 });
 
+describe("dispatchInternalTool — start_run workspace-mode validation (R6 hardening)", () => {
+  it("rejects an unrecognized workspace mode with WORKSPACE_MODE_INVALID and does not start the run", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    const r = await dispatchInternalTool(ctx, state, "traceguard_start_run", {
+      runId: "run_demo",
+      mode: "yolo_autopilot",
+    });
+    expect((r as { isError?: boolean }).isError).toBe(true);
+    expect(tg(r).errorCode).toBe("WORKSPACE_MODE_INVALID");
+    // Fail-closed: the bad mode is neither persisted onto the run nor used to start it.
+    expect(ctx.run.mode).toBe("safe_demo");
+    const events = await ctx.store.read(ctx.audit.workspaceId, ctx.run.runId);
+    expect(events.some((e) => e.eventType === "RunStarted")).toBe(false);
+  });
+
+  it("accepts a recognized non-default workspace mode", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    const r = await dispatchInternalTool(ctx, state, "traceguard_start_run", {
+      runId: "run_demo",
+      mode: "approval_mode",
+    });
+    expect((r as { isError?: boolean }).isError).toBe(false);
+    expect(tg(r).status).toBe("RUN_STARTED");
+    expect(ctx.run.mode).toBe("approval_mode");
+  });
+});
+
 describe("dispatchInternalTool — authorization-use guards (§11 criterion 4)", () => {
   it("a second execute_authorized_action on the same authorization returns AUTHORIZATION_CONSUMED", async () => {
     const ctx = context();
@@ -249,5 +278,33 @@ describe("dispatchInternalTool — authorization-use guards (§11 criterion 4)",
     });
     expect((ex as { isError?: boolean }).isError).toBe(true);
     expect(tg(ex).errorCode).toBe("APPROVAL_EXPIRED");
+  });
+
+  it("rejects execute_authorized_action when the presented authorizationId is not the issued one", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    const { decisionId } = await toApproved(ctx, state);
+
+    const ex = await dispatchInternalTool(ctx, state, "traceguard_execute_authorized_action", {
+      runId: "run_demo",
+      decisionId,
+      authorizationId: "authz_forged",
+      executionAdapter: "simulator",
+    });
+    expect((ex as { isError?: boolean }).isError).toBe(true);
+    expect(tg(ex).errorCode).toBe("AUTHORIZATION_MISSING");
+  });
+});
+
+describe("mapExecReason", () => {
+  it("maps each execution-gate reason to its structured error code", () => {
+    expect(mapExecReason("capability_unavailable")).toBe("CAPABILITY_UNAVAILABLE");
+    expect(mapExecReason("snapshot_stale")).toBe("SNAPSHOT_STALE");
+    expect(mapExecReason("manifest_unapproved")).toBe("MANIFEST_UNAPPROVED");
+    expect(mapExecReason("workspace_locked")).toBe("WORKSPACE_LOCKED");
+  });
+
+  it("falls back to EXECUTION_FAILED for an unrecognized reason", () => {
+    expect(mapExecReason("something_unexpected")).toBe("EXECUTION_FAILED");
   });
 });

@@ -1226,7 +1226,7 @@ Do not depend on this for v0.1.
 
 ## 14. Structured Error Codes
 
-> **3E-1 internal-tool codes:** `DECISION_INVALID`, `POLICY_BLOCKED`, `APPROVAL_REQUIRED` (a non-error `status`, `isError:false`), `APPROVAL_EXPIRED`, `AUTHORIZATION_MISSING`, `AUTHORIZATION_CONSUMED`, `ACTION_DIGEST_MISMATCH`, `EXECUTION_UNKNOWN`, `EXECUTION_FAILED`, `CAPABILITY_UNAVAILABLE`, `RUN_NOT_FOUND`. Reserved-but-unreachable in the simulator slice (all gates `false`): `SNAPSHOT_STALE`, `PROVIDER_DEGRADED`, `WORKSPACE_LOCKED`, `MANIFEST_UNAPPROVED`.
+> **3E-1 internal-tool codes:** `DECISION_INVALID`, `POLICY_BLOCKED`, `APPROVAL_REQUIRED` (a non-error `status`, `isError:false`), `APPROVAL_EXPIRED`, `AUTHORIZATION_MISSING`, `AUTHORIZATION_CONSUMED`, `ACTION_DIGEST_MISMATCH`, `EXECUTION_UNKNOWN`, `EXECUTION_FAILED`, `CAPABILITY_UNAVAILABLE`, `WORKSPACE_MODE_INVALID`, `RUN_NOT_FOUND`. Reserved-but-unreachable in the simulator slice (all gates `false`): `SNAPSHOT_STALE`, `PROVIDER_DEGRADED`, `WORKSPACE_LOCKED`, `MANIFEST_UNAPPROVED`.
 
 | Code                         | Meaning                                           |
 | ---------------------------- | ------------------------------------------------- |
@@ -1246,8 +1246,13 @@ Do not depend on this for v0.1.
 | `ACTION_DIGEST_MISMATCH`     | Approved action differs from attempted action     |
 | `CAPABILITY_UNAVAILABLE`     | Provider does not support requested capability    |
 | `SNAPSHOT_STALE`             | Market snapshot is too old                        |
+| `MANIFEST_UNAPPROVED`        | Active tool manifest is not approved for execution |
+| `WORKSPACE_LOCKED`           | Workspace is locked (e.g. investigation hold)     |
 | `PROVIDER_DEGRADED`          | Upstream provider unavailable or degraded         |
 | `EXECUTION_UNKNOWN`          | Provider state ambiguous; reconciliation required |
+| `EXECUTION_FAILED`           | Execution failed for an unclassified reason       |
+| `WORKSPACE_MODE_INVALID`     | `start_run` was given a mode outside the `WorkspaceMode` enum |
+| `RUN_NOT_FOUND`              | The `runId` does not match the active governed run |
 
 ------
 

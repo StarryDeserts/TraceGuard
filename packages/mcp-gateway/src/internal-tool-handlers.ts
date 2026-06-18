@@ -1,4 +1,4 @@
-import { makeEvent, approvalProjection, type LedgerStore } from "@traceguard/event-ledger";
+import { makeEvent, approvalProjection, authorizationProjection, type LedgerStore } from "@traceguard/event-ledger";
 import { computeActionDigest } from "@traceguard/policy-engine";
 import { proposeDecision, resolveAuthorizationGateway } from "@traceguard/domain";
 import { executionOrchestrator } from "@traceguard/runtime";
@@ -6,6 +6,7 @@ import {
   RunStartedPayload,
   RunCompletedPayload,
   RunFailedPayload,
+  WorkspaceMode,
   type ActionDigestInput,
   type DecisionAction,
   type ExecutionAdapterType,
@@ -35,6 +36,10 @@ export type InternalErrorCode =
   | "EXECUTION_UNKNOWN"
   | "EXECUTION_FAILED"
   | "CAPABILITY_UNAVAILABLE"
+  | "SNAPSHOT_STALE"
+  | "MANIFEST_UNAPPROVED"
+  | "WORKSPACE_LOCKED"
+  | "WORKSPACE_MODE_INVALID"
   | "RUN_NOT_FOUND";
 
 export function internalOk(status: string, extra: Record<string, unknown> = {}): CallToolResult {
@@ -107,7 +112,13 @@ async function startRun(
 ): Promise<CallToolResult> {
   if (typeof args.agentName === "string") ctx.run.agentName = args.agentName;
   if (typeof args.intent === "string") ctx.run.intent = args.intent;
-  if (typeof args.mode === "string") ctx.run.mode = args.mode;
+  if (args.mode !== undefined) {
+    // Fail-closed at the boundary: an unrecognized mode must never reach the
+    // policy context or the action digest, where it is a load-bearing input.
+    const parsedMode = WorkspaceMode.safeParse(args.mode);
+    if (!parsedMode.success) return internalErr("WORKSPACE_MODE_INVALID", "traceguard_start_run");
+    ctx.run.mode = parsedMode.data;
+  }
 
   const ws = ctx.audit.workspaceId;
   const runEvents = await ctx.store.read(ws, ctx.run.runId);
@@ -312,6 +323,14 @@ async function executeAuthorizedAction(
   const executionAdapter = (args.executionAdapter ?? "simulator") as ExecutionAdapterType;
   if (executionAdapter !== "simulator") return internalErr("CAPABILITY_UNAVAILABLE", name);
 
+  // Defense-in-depth: the schema-required authorizationId must be the one actually
+  // issued for this run, not merely a well-formed string the caller supplied.
+  const presentedAuthorizationId = String(args.authorizationId ?? "");
+  const authorization = authorizationProjection(await ctx.store.read(ctx.audit.workspaceId, ctx.run.runId));
+  if (authorization.authorizationId === undefined || presentedAuthorizationId !== authorization.authorizationId) {
+    return internalErr("AUTHORIZATION_MISSING", name);
+  }
+
   const actionDigestInput: ActionDigestInput = { ...cached.digestBase, executionAdapter };
   return finishExecution(ctx, decisionId, actionDigestInput, executionAdapter, "EXECUTED", name);
 }
@@ -440,6 +459,17 @@ function mapGuardReason(reasonCode: string): InternalErrorCode {
   }
 }
 
-function mapExecReason(_reasonCode: string): InternalErrorCode {
-  return "CAPABILITY_UNAVAILABLE";
+export function mapExecReason(reasonCode: string): InternalErrorCode {
+  switch (reasonCode) {
+    case "capability_unavailable":
+      return "CAPABILITY_UNAVAILABLE";
+    case "snapshot_stale":
+      return "SNAPSHOT_STALE";
+    case "manifest_unapproved":
+      return "MANIFEST_UNAPPROVED";
+    case "workspace_locked":
+      return "WORKSPACE_LOCKED";
+    default:
+      return "EXECUTION_FAILED";
+  }
 }
