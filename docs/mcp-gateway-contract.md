@@ -652,6 +652,8 @@ credential references
 ### 9.4 Handling Path: Trade-like
 
 > **3E-1 (landed):** The trade-like governance path is implemented behind the six internal `traceguard_*` tools (`start_run → record_decision → request_execution → [check_approval] → execute_authorized_action → finish_run`), not by intercepting the upstream `*_place_order` call — the raw upstream `trade_like` deny (`DECISION_ENVELOPE_REQUIRED`) is unchanged. Execution targets a **simulator** adapter. Argument JSON-Schema validation (§9.2) and result redaction (§9.3) on the forwarded path remain deferred to **3E-2**.
+>
+> **3E-2c (landed):** `request_execution` / `execute_authorized_action` now accept `executionAdapter: "bitget_live"` in addition to `"simulator"`. The `bitget_live` adapter recovers the order intent from the run's `DecisionProposed` ledger event (the digest-centric `ExecutionRequest` carries no order body), maps it to the upstream `spot_place_order` call, and settles `ExecutionCompleted` with `finalStatus: "submitted"` and `receiptRef: "receipt:bitget:<orderId>"`. Live execution is **spot-only**: a non-spot `bitget_live` attempt is rejected by the execution gate as `CAPABILITY_UNAVAILABLE` (an auditable `ExecutionRejected`, `executionSent:false`). Pre-submit failures (intent not found, unmappable action, missing size, upstream error result) fail closed to `EXECUTION_FAILED`; post-submit ambiguity (timeout, connection loss, unreadable receipt) settles `ExecutionUnknown` (`reconciliationRequired:true`, `retryBlocked:true`) and returns `EXECUTION_UNKNOWN` — never retried. Argument JSON-Schema validation (§9.2) and result redaction (§9.3) on the forwarded path remain deferred.
 
 For trade-like tools:
 
@@ -923,6 +925,8 @@ DecisionRejected
 ### 12.3 `traceguard_request_execution`
 
 > **3E-1 (landed):** The policy outcome is computed at `record_decision` (inside `proposeDecision`) and **cached**; `request_execution` acts on the cached outcome — allow ⇒ issue authorization + burn + simulate execution inline; require_approval ⇒ emit `ApprovalRequested` and return non-blocking `APPROVAL_REQUIRED`; block ⇒ `POLICY_BLOCKED` (`isError:true`, `matchedRules`, `executionSent:false`). `finish_run` is idempotent against an allow path that already settled the run.
+>
+> **3E-2c (landed):** On an `allow` outcome with `executionAdapter: "bitget_live"` and a **spot** decision, `request_execution` issues + burns the authorization and submits the order live, returning `ALLOWED` with `receipt.finalStatus: "submitted"` and `receipt.receiptRef: "receipt:bitget:<orderId>"`. A post-submit ambiguity returns `isError:true` with `errorCode: "EXECUTION_UNKNOWN"` (the run is left for reconciliation, not retried). A non-spot `bitget_live` decision returns `CAPABILITY_UNAVAILABLE`. The `simulator` adapter behavior is unchanged.
 
 Purpose:
 
