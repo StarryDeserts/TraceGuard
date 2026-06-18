@@ -12,13 +12,24 @@ import { RunCreatedPayload } from "./run-payloads.js";
 const DIGEST = "a".repeat(64);
 
 describe("tool-call payloads", () => {
-  it("CallDenyCode enumerates the four deny codes", () => {
+  it("CallDenyCode enumerates the five deny codes", () => {
     expect(CallDenyCode.options).toEqual([
       "UNKNOWN_TOOL",
       "TOOL_FROZEN",
       "TOOL_BLOCKED",
       "DECISION_ENVELOPE_REQUIRED",
+      "ARGUMENTS_INVALID",
     ]);
+  });
+
+  it("ToolCallDeniedPayload accepts the ARGUMENTS_INVALID deny code", () => {
+    const parsed = ToolCallDeniedPayload.parse({
+      runId: "run_1",
+      toolName: "spot_get_ticker",
+      denyCode: "ARGUMENTS_INVALID",
+      riskClass: "public_read",
+    });
+    expect(parsed.denyCode).toBe("ARGUMENTS_INVALID");
   });
 
   it("ToolCallRequestedPayload requires a 64-hex argumentsDigest", () => {

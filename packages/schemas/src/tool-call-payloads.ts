@@ -6,6 +6,7 @@ export const CallDenyCode = z.enum([
   "TOOL_FROZEN",
   "TOOL_BLOCKED",
   "DECISION_ENVELOPE_REQUIRED",
+  "ARGUMENTS_INVALID",
 ]);
 export type CallDenyCode = z.infer<typeof CallDenyCode>;
 
