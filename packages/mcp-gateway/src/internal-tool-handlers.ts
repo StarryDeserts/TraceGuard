@@ -392,6 +392,7 @@ async function finishExecution(
 ): Promise<CallToolResult> {
   const ws = ctx.audit.workspaceId;
   const attemptedActionDigest = computeActionDigest(actionDigestInput, ctx.deps.hash);
+  const adapter = ctx.adapters[adapterType] ?? ctx.adapters.simulator!;
   const { outcome } = await executionOrchestrator(
     {
       workspaceId: ws,
@@ -402,7 +403,7 @@ async function finishExecution(
       gates: { workspaceLocked: false, manifestChanged: false, policyChanged: false },
       executionGates: { capabilityUnavailable: false, snapshotStale: false, manifestUnapproved: false },
     },
-    { ...ctx.deps, store: ctx.store, adapter: ctx.adapter },
+    { ...ctx.deps, store: ctx.store, adapter },
   );
 
   if (outcome === "completed") {

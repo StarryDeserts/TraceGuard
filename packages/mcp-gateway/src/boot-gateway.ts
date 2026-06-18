@@ -10,7 +10,7 @@ import {
   rejectApproval,
   type ApprovalOutcome,
 } from "@traceguard/domain";
-import { createSimulatorAdapter } from "@traceguard/runtime";
+import { createSimulatorAdapter, createBitgetLiveAdapter } from "@traceguard/runtime";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   type UpstreamManifestClient,
@@ -115,7 +115,16 @@ export async function bootGateway(
     deps,
     audit,
     policy,
-    adapter: createSimulatorAdapter({ hash: deps.hash }),
+    adapters: {
+      simulator: createSimulatorAdapter({ hash: deps.hash }),
+      bitget_live: createBitgetLiveAdapter({
+        store,
+        client,
+        workspaceId: args.workspaceId,
+        hash: deps.hash,
+        timeoutMs: 10_000,
+      }),
+    },
     run,
     cache: createDecisionCache(),
     ttls,

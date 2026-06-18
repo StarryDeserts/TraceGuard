@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { SystemClock, SystemIdGen, sha256hex, InMemoryLedgerStore, approvalProjection } from "@traceguard/event-ledger";
 import { createSimulatorAdapter } from "@traceguard/runtime";
 import { approveApproval } from "@traceguard/domain";
+import type { ExecutionAdapter, ExecutionResult } from "@traceguard/domain";
 import type { GatewayState } from "./gateway-state.js";
 import { DEFAULT_POLICY } from "./default-policy.js";
 import { createDecisionCache } from "./decision-cache.js";
@@ -13,13 +14,29 @@ function gatewayState(): GatewayState {
   return { servedTools: [], route: new Map(), manifestHash: "a".repeat(64), toolCount: 0, degraded: false };
 }
 
-function context(clock: { now: () => string } = new SystemClock()): InternalToolContext {
+function stubBitgetLive(result: ExecutionResult): ExecutionAdapter {
+  return { adapterType: "bitget_live", async call() { return result; } };
+}
+
+function context(
+  clock: { now: () => string } = new SystemClock(),
+  bitget: ExecutionResult = {
+    kind: "completed",
+    finalStatus: "submitted",
+    receiptRef: "receipt:bitget:OID-1",
+    receiptHash: sha256hex("receipt:bitget:OID-1"),
+    upstreamRef: "OID-1",
+  },
+): InternalToolContext {
   return {
     store: new InMemoryLedgerStore(),
     deps: { clock, newId: new SystemIdGen(), hash: sha256hex },
     audit: { workspaceId: "ws_demo", runId: "run_demo", providerConnectionId: "pc_bitget" },
     policy: DEFAULT_POLICY,
-    adapter: createSimulatorAdapter({ hash: sha256hex }),
+    adapters: {
+      simulator: createSimulatorAdapter({ hash: sha256hex }),
+      bitget_live: stubBitgetLive(bitget),
+    },
     run: { runId: "run_demo", mode: "safe_demo" },
     cache: createDecisionCache(),
     ttls: { approvalSeconds: 900, authorizationSeconds: 900 },
@@ -166,6 +183,20 @@ describe("dispatchInternalTool", () => {
       runId: "run_demo",
       decisionId,
       executionAdapter: "bitget_live",
+    });
+    expect(tg(exec).errorCode).toBe("CAPABILITY_UNAVAILABLE");
+  });
+
+  it("rejects an unregistered adapter type (replay) with CAPABILITY_UNAVAILABLE", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    await dispatchInternalTool(ctx, state, "traceguard_start_run", { runId: "run_demo" });
+    const rec = await record(ctx, state, { requestedNotionalUsdt: "100", requestedLeverage: "2" });
+    const decisionId = tg(rec).decisionId as string;
+    const exec = await dispatchInternalTool(ctx, state, "traceguard_request_execution", {
+      runId: "run_demo",
+      decisionId,
+      executionAdapter: "replay",
     });
     expect(tg(exec).errorCode).toBe("CAPABILITY_UNAVAILABLE");
   });

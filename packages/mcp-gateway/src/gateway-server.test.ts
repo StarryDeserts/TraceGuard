@@ -88,7 +88,7 @@ async function makeInternalCtx(
     deps: d,
     audit: AUDIT,
     policy: DEFAULT_POLICY,
-    adapter: createSimulatorAdapter({ hash: sha256hex }),
+    adapters: { simulator: createSimulatorAdapter({ hash: sha256hex }) },
     run: { runId: AUDIT.runId, mode: "safe_demo" },
     cache: createDecisionCache(),
     ttls: { approvalSeconds: 900, authorizationSeconds: 900 },
