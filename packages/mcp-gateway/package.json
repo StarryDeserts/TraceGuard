@@ -13,7 +13,8 @@
     "@traceguard/tool-manifest": "workspace:*",
     "@traceguard/domain": "workspace:*",
     "@traceguard/policy-engine": "workspace:*",
-    "@traceguard/runtime": "workspace:*"
+    "@traceguard/runtime": "workspace:*",
+    "ajv": "^8.17.1"
   },
   "devDependencies": {
     "@traceguard/testing-fixtures": "workspace:*"

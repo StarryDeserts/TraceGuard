@@ -73,6 +73,9 @@ importers:
       '@traceguard/tool-manifest':
         specifier: workspace:*
         version: link:../tool-manifest
+      ajv:
+        specifier: ^8.17.1
+        version: 8.20.0
     devDependencies:
       '@traceguard/testing-fixtures':
         specifier: workspace:*
