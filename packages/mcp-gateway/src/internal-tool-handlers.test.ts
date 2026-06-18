@@ -201,6 +201,39 @@ describe("dispatchInternalTool", () => {
     expect(tg(exec).errorCode).toBe("CAPABILITY_UNAVAILABLE");
   });
 
+  it("executes a bitget_live spot decision to ALLOWED with a submitted bitget receipt", async () => {
+    const ctx = context();
+    const state = gatewayState();
+    await dispatchInternalTool(ctx, state, "traceguard_start_run", { runId: "run_demo" });
+    const rec = await record(ctx, state, { marketType: "spot", action: "buy", requestedNotionalUsdt: "100" });
+    const decisionId = tg(rec).decisionId as string;
+
+    const exec = await dispatchInternalTool(ctx, state, "traceguard_request_execution", {
+      runId: "run_demo",
+      decisionId,
+      executionAdapter: "bitget_live",
+    });
+    expect(tg(exec).status).toBe("ALLOWED");
+    expect((tg(exec).receipt as { receiptRef?: string }).receiptRef).toBe("receipt:bitget:OID-1");
+    expect((tg(exec).receipt as { finalStatus?: string }).finalStatus).toBe("submitted");
+  });
+
+  it("surfaces a bitget_live post-submit ambiguity as EXECUTION_UNKNOWN", async () => {
+    const ctx = context(new SystemClock(), { kind: "unknown", reasonCode: "timeout_after_submit" });
+    const state = gatewayState();
+    await dispatchInternalTool(ctx, state, "traceguard_start_run", { runId: "run_demo" });
+    const rec = await record(ctx, state, { marketType: "spot", action: "buy", requestedNotionalUsdt: "100" });
+    const decisionId = tg(rec).decisionId as string;
+
+    const exec = await dispatchInternalTool(ctx, state, "traceguard_request_execution", {
+      runId: "run_demo",
+      decisionId,
+      executionAdapter: "bitget_live",
+    });
+    expect((exec as { isError?: boolean }).isError).toBe(true);
+    expect(tg(exec).errorCode).toBe("EXECUTION_UNKNOWN");
+  });
+
   it("returns DECISION_INVALID for an unknown decisionId", async () => {
     const ctx = context();
     const exec = await dispatchInternalTool(ctx, gatewayState(), "traceguard_request_execution", {

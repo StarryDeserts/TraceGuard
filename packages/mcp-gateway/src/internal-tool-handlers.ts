@@ -244,7 +244,9 @@ async function requestExecution(ctx: InternalToolContext, args: Record<string, u
   if (!cached) return internalErr("DECISION_INVALID", name);
 
   const executionAdapter = (args.executionAdapter ?? "simulator") as ExecutionAdapterType;
-  if (executionAdapter !== "simulator") return internalErr("CAPABILITY_UNAVAILABLE", name);
+  if (executionAdapter !== "simulator" && executionAdapter !== "bitget_live") {
+    return internalErr("CAPABILITY_UNAVAILABLE", name);
+  }
 
   if (cached.outcome === "block") {
     return internalErr("POLICY_BLOCKED", name, { matchedRules: cached.matchedRules, executionSent: false });
@@ -321,7 +323,9 @@ async function executeAuthorizedAction(
   if (!cached) return internalErr("DECISION_INVALID", name);
 
   const executionAdapter = (args.executionAdapter ?? "simulator") as ExecutionAdapterType;
-  if (executionAdapter !== "simulator") return internalErr("CAPABILITY_UNAVAILABLE", name);
+  if (executionAdapter !== "simulator" && executionAdapter !== "bitget_live") {
+    return internalErr("CAPABILITY_UNAVAILABLE", name);
+  }
 
   // Defense-in-depth: the schema-required authorizationId must be the one actually
   // issued for this run, not merely a well-formed string the caller supplied.
@@ -392,6 +396,10 @@ async function finishExecution(
 ): Promise<CallToolResult> {
   const ws = ctx.audit.workspaceId;
   const attemptedActionDigest = computeActionDigest(actionDigestInput, ctx.deps.hash);
+  // Live execution is spot-only in this slice: a non-spot bitget_live attempt is
+  // rejected by the orchestrator's execution gate (capability_unavailable), never
+  // hard-gated away, so it lands an auditable ExecutionRejected on the ledger.
+  const capabilityUnavailable = adapterType === "bitget_live" && actionDigestInput.marketType !== "spot";
   const adapter = ctx.adapters[adapterType] ?? ctx.adapters.simulator!;
   const { outcome } = await executionOrchestrator(
     {
@@ -401,7 +409,7 @@ async function finishExecution(
       attemptedActionDigest,
       adapterType,
       gates: { workspaceLocked: false, manifestChanged: false, policyChanged: false },
-      executionGates: { capabilityUnavailable: false, snapshotStale: false, manifestUnapproved: false },
+      executionGates: { capabilityUnavailable, snapshotStale: false, manifestUnapproved: false },
     },
     { ...ctx.deps, store: ctx.store, adapter },
   );
