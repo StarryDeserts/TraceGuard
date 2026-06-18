@@ -216,4 +216,27 @@ describe("handleToolCall", () => {
     expect(completed).toBeDefined();
     expect(completed!.payload.resultDigest).toBe(sha256hex(canonicalJson(result)));
   });
+
+  it("fails closed with RESULT_REDACTION_FAILED when redaction throws on a deep result", async () => {
+    const d = deps();
+    let node: Record<string, unknown> = {};
+    const deepResult = node;
+    for (let i = 0; i < 200; i++) {
+      const child: Record<string, unknown> = {};
+      node.child = child;
+      node = child;
+    }
+    const client = new FakeUpstreamClient({
+      kind: "result",
+      result: deepResult as unknown as CallToolResult,
+    });
+    const { ctx, store } = await seededCtx(client, d);
+    const state = stateWith([["spot_get_ticker", "active", "public_read"]]);
+
+    const res = await handleToolCall(state, ctx, "spot_get_ticker", { symbol: "BTCUSDT" });
+
+    expect(tg(res).errorCode).toBe("RESULT_REDACTION_FAILED");
+    const events = await store.read(AUDIT.workspaceId);
+    expect(types(events)).toEqual(["RunCreated", "ToolCallRequested", "ToolCallCompleted"]);
+  });
 });

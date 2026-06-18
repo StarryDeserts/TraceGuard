@@ -3,7 +3,19 @@ import {
   redactResult,
   normalizeKey,
   AGENT_CREDENTIAL_PROFILE,
+  RedactionDepthExceededError,
 } from "./result-redaction.js";
+
+function nest(levels: number): Record<string, unknown> {
+  let node: Record<string, unknown> = {};
+  const root = node;
+  for (let i = 0; i < levels; i++) {
+    const child: Record<string, unknown> = {};
+    node.child = child;
+    node = child;
+  }
+  return root;
+}
 
 describe("normalizeKey", () => {
   it("lowercases and strips underscores and dashes", () => {
@@ -111,5 +123,13 @@ describe("redactResult", () => {
       structuredContent: { credential: "[REDACTED]", balance: "5" },
       isError: false,
     });
+  });
+
+  it("throws RedactionDepthExceededError on pathologically deep nesting", () => {
+    expect(() => redactResult(nest(200), P)).toThrow(RedactionDepthExceededError);
+  });
+
+  it("does not throw for results nested within the depth bound", () => {
+    expect(() => redactResult(nest(50), P)).not.toThrow();
   });
 });

@@ -23,7 +23,11 @@ export interface GatewayCallContext {
   argValidator: ArgValidator;
 }
 
-export type CallErrorCode = CallDenyCode | "TOOL_CALL_NOT_AVAILABLE" | "UPSTREAM_CALL_FAILED";
+export type CallErrorCode =
+  | CallDenyCode
+  | "TOOL_CALL_NOT_AVAILABLE"
+  | "UPSTREAM_CALL_FAILED"
+  | "RESULT_REDACTION_FAILED";
 
 export interface ToolCallDenial {
   isError: true;
@@ -40,6 +44,8 @@ const DENY_TEXT: Record<CallErrorCode, string> = {
   ARGUMENTS_INVALID: "The arguments did not match the tool's approved schema.",
   TOOL_CALL_NOT_AVAILABLE: "Tool execution is not available because the gateway booted degraded.",
   UPSTREAM_CALL_FAILED: "The upstream provider call failed; the request was not completed.",
+  RESULT_REDACTION_FAILED:
+    "The provider result could not be safely redacted; the request was not completed.",
 };
 
 export function denyCall(
@@ -118,7 +124,14 @@ export async function handleToolCall(
       result,
     });
     await ctx.store.append(requested.eventHash, [completed]);
-    return redactResult(result, AGENT_CREDENTIAL_PROFILE);
+    try {
+      return redactResult(result, AGENT_CREDENTIAL_PROFILE);
+    } catch {
+      // Redaction failed (e.g. a pathologically nested provider result): fail
+      // closed — never hand an unredacted result back to the agent. The raw
+      // result is already committed to the ledger above for the audit trail.
+      return denyCall("RESULT_REDACTION_FAILED", name);
+    }
   } catch {
     const failed = recordToolCallFailed(ctx.audit, ctx.deps, requested.eventHash, {
       toolName: name,
