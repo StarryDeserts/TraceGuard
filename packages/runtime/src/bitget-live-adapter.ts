@@ -107,6 +107,10 @@ export function createBitgetLiveAdapter(deps: BitgetLiveAdapterDeps): ExecutionA
         result = await raceWithTimeout(deps.client.callTool("spot_place_order", args), timeoutMs);
       } catch (err) {
         // The order may already be live: never retry, surface for reconciliation.
+        // We deliberately do NOT try to tell a pre-connection throw (e.g.
+        // "called before open", nothing sent) apart from a genuine post-submit
+        // connection loss — misjudging a real loss as pre-submit would fail open
+        // on a live order. Over-flagging reconciliation is the safe direction.
         return err instanceof TimeoutError
           ? { kind: "unknown", reasonCode: "timeout_after_submit" }
           : { kind: "unknown", reasonCode: "connection_lost_after_submit" };

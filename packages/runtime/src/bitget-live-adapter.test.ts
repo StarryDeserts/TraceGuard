@@ -208,6 +208,20 @@ describe("createBitgetLiveAdapter", () => {
     expect(await adapter.call(request())).toEqual({ kind: "unknown", reasonCode: "connection_lost_after_submit" });
   });
 
+  it("classifies a pre-connection throw conservatively as connection_lost_after_submit", async () => {
+    // The MCP client can throw synchronously *before* the request reaches the
+    // wire (e.g. "called before connection is open"). We deliberately do not
+    // distinguish that from a genuine post-submit loss: failing toward
+    // reconciliation can never fail open on an order that may already be live.
+    const preConnectionClient: UpstreamCaller = {
+      callTool() {
+        throw new Error("called before connection is open");
+      },
+    };
+    const adapter = createBitgetLiveAdapter(adapterDeps(seeded(), preConnectionClient));
+    expect(await adapter.call(request())).toEqual({ kind: "unknown", reasonCode: "connection_lost_after_submit" });
+  });
+
   it("selects the decision matching request.decisionId when the ledger holds several", async () => {
     // A non-matching decision is seeded FIRST, so a naive "take the first
     // DecisionProposed" lookup would submit the wrong order and fail this test.
