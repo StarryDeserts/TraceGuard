@@ -8,6 +8,7 @@ export * from "./tool-call-events.js";
 export * from "./gateway-server.js";
 export * from "./call-handler.js";
 export * from "./boot-gateway.js";
+export * from "./gateway-runtime.js";
 export * from "./default-policy.js";
 export * from "./decision-cache.js";
 export * from "./evaluation-context.js";
