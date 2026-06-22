@@ -177,6 +177,13 @@ describe("createBitgetLiveAdapter", () => {
     await expect(adapter.call(request())).rejects.toThrow("decision_intent_not_found");
   });
 
+  it("names the runId and decisionId in the decision_intent_not_found throw", async () => {
+    const adapter = createBitgetLiveAdapter(adapterDeps([], caller(() => ({ structuredContent: { orderId: "x" } }))));
+    await expect(adapter.call(request({ runId: "run_X", decisionId: "dec_Y" }))).rejects.toThrow(
+      /decision_intent_not_found.*run_X.*dec_Y/,
+    );
+  });
+
   it("throws when the upstream returns an error result (pre-submit reject)", async () => {
     const adapter = createBitgetLiveAdapter(adapterDeps(seeded(), caller(() => ({ isError: true }))));
     await expect(adapter.call(request())).rejects.toThrow("upstream_rejected");

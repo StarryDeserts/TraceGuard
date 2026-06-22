@@ -93,7 +93,11 @@ export function createBitgetLiveAdapter(deps: BitgetLiveAdapterDeps): ExecutionA
       // Recover the order intent from the rich DecisionProposed event (Option A):
       // the digest-centric ExecutionRequest never carries the order body.
       const decision = await findDecisionProposed(deps.store, deps.workspaceId, request.runId, request.decisionId);
-      if (decision === undefined) throw new Error("decision_intent_not_found");
+      if (decision === undefined) {
+        // runId/decisionId are internal identifiers (not credentials or order
+        // bodies), safe to surface; nothing downstream parses this message.
+        throw new Error(`decision_intent_not_found: runId=${request.runId} decisionId=${request.decisionId}`);
+      }
 
       // Pre-submit mapping failures throw -> orchestrator -> RunFailed -> EXECUTION_FAILED.
       const args = buildSpotOrderArgs(decision);
