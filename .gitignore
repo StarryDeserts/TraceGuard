@@ -26,3 +26,6 @@ coverage/
 
 # Claude Code session continuation dumps
 *-this-session-is-being-continued-from-a-previous-c.txt
+
+# Live demo output (never committed; the deterministic golden under docs/ is the committed artifact)
+.demo-out/
