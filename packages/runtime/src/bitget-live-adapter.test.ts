@@ -80,6 +80,12 @@ describe("parseOrderId", () => {
     expect(parseOrderId({ structuredContent: {} })).toBeUndefined();
     expect(parseOrderId({})).toBeUndefined();
   });
+
+  it("treats an empty-string order id as no receipt (fail-safe, never fabricates)", () => {
+    expect(parseOrderId({ structuredContent: { orderId: "" } })).toBeUndefined();
+    expect(parseOrderId({ structuredContent: { order_id: "" } })).toBeUndefined();
+    expect(parseOrderId({ structuredContent: { orderID: "" } })).toBeUndefined();
+  });
 });
 
 function decisionEvent(decisionId: string, runId: string, payload: DecisionProposedPayload): LedgerEvent {
