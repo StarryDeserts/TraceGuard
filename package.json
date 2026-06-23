@@ -11,10 +11,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "bash scripts/demo.sh",
-    "demo:live": "bash scripts/demo-live.sh"
+    "demo:live": "bash scripts/demo-live.sh",
+    "build:bin": "pnpm --filter @traceguard/mcp-gateway build:bin",
+    "gateway": "node packages/mcp-gateway/dist/bin/gateway-local.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.19.20",
+    "esbuild": "^0.27.7",
     "fast-check": "^3.22.0",
     "typescript": "^5.6.0",
     "vite": "^7.3.5",

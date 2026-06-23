@@ -6,6 +6,12 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
+  "bin": {
+    "traceguard-gateway": "./dist/bin/gateway-local.mjs"
+  },
+  "scripts": {
+    "build:bin": "node scripts/build-bin.mjs"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@traceguard/schemas": "workspace:*",
@@ -14,7 +20,8 @@
     "@traceguard/domain": "workspace:*",
     "@traceguard/policy-engine": "workspace:*",
     "@traceguard/runtime": "workspace:*",
-    "ajv": "^8.17.1"
+    "ajv": "^8.17.1",
+    "bitget-mcp-server": "^1.1.0"
   },
   "devDependencies": {
     "@traceguard/testing-fixtures": "workspace:*"

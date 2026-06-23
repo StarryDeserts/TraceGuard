@@ -203,24 +203,65 @@ Two committed artifacts back the runnability claim:
 
 ## Integrating TraceGuard with Bitget Agent Hub
 
-### 1. Make the Bitget tools available
+### 1. Build the governed gateway
 
-Add the Bitget Agent Hub MCP server to your AI client (paper trading needs no
-live keys):
-
-```bash
-npx -y bitget-mcp-server --paper-trading
-```
-
-To register it with an MCP-capable client (example for Claude):
+The gateway ships as a single self-contained MCP server. Bundle it once:
 
 ```bash
-claude mcp add -s user bitget -- npx -y bitget-mcp-server --paper-trading
+pnpm install
+pnpm build:bin
 ```
 
-### 2. Put TraceGuard in front
+This produces `packages/mcp-gateway/dist/bin/gateway-local.mjs` — a portable
+ESM bin that runs under plain `node`, no TypeScript runner required. Smoke-test
+it directly; it reports how many governed tools it serves and then stays up
+holding an MCP stdio connection:
 
-TraceGuard wraps that upstream server as an MCP gateway. The gateway:
+```bash
+pnpm gateway
+# [gateway-local] served tools: 31
+# [gateway-local] manifestHash: 3a2999…
+```
+
+### 2. Point your MCP client at TraceGuard (not at Bitget directly)
+
+The agent connects to **TraceGuard**, and TraceGuard launches
+`bitget-mcp-server --paper-trading` as its own upstream — so every Bitget tool
+the agent can see has already been risk-classified and wrapped in the
+governance pipeline. Registering Bitget directly with your client instead would
+bypass governance entirely. Add the gateway to any MCP-capable client (paths
+must be absolute):
+
+```json
+{
+  "mcpServers": {
+    "traceguard": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/TraceGuard/packages/mcp-gateway/dist/bin/gateway-local.mjs"
+      ],
+      "env": {
+        "TRACEGUARD_LEDGER_DIR": "/absolute/path/to/your/traceguard-ledger"
+      }
+    }
+  }
+}
+```
+
+For the Claude Code CLI the equivalent one-liner is:
+
+```bash
+claude mcp add -s user traceguard -- \
+  node /absolute/path/to/TraceGuard/packages/mcp-gateway/dist/bin/gateway-local.mjs
+```
+
+`TRACEGUARD_LEDGER_DIR` is optional: when set, the hash-chained ledger is
+persisted to `<dir>/<workspaceId>.jsonl` so runs survive restarts and stay
+independently auditable; when unset, the gateway keeps the ledger in memory.
+The bundled bin always runs its upstream in `--paper-trading` mode (public
+market data only — no API keys, no real funds).
+
+The gateway:
 
 1. calls `tools/list` upstream, maps and fingerprints each tool, and assigns a
    risk class;
@@ -280,7 +321,7 @@ packages/
   policy-engine/      deterministic policy evaluation
   domain/             execution adapter + transition types
   runtime/            simulator + bitget_live execution adapters, orchestrator
-  mcp-gateway/        the MCP gateway, internal traceguard_ tools, demo
+  mcp-gateway/        the MCP gateway, internal traceguard_ tools, demo, bundled bin
   testing-fixtures/   shared test fixtures
 docs/                 product spec, threat model, event/data/replay models, demo
 scripts/demo.sh       one-click deterministic (offline) demo
@@ -294,14 +335,20 @@ scripts/demo-live.sh  one-click live paper-trading demo (real bitget-mcp-server)
 ```bash
 pnpm test        # run the full vitest suite (offline)
 pnpm typecheck   # tsc --build type gate (vitest does not type-check)
+pnpm build:bin   # bundle the gateway into a standalone node bin
+pnpm gateway     # launch the bundled governed gateway (paper-trading upstream)
 pnpm demo        # reproduce the governed-run transcript (offline)
 pnpm demo:live   # govern a live run against bitget-mcp-server --paper-trading
 ```
 
 > Note on running entrypoints: each workspace package resolves to its
-> TypeScript source (`"main": "./src/index.ts"`), so the bins are run through
-> **vitest** (the project's TS runner), not `node dist/...`. `pnpm demo` wraps
-> that for you.
+> TypeScript source (`"main": "./src/index.ts"`), so tests and the demo bins
+> run through **vitest** (the project's TS runner), not `node dist/...`. The
+> shippable exception is the gateway itself: `pnpm build:bin` bundles it with
+> esbuild — inlining the workspace packages and rewriting their `.js` import
+> specifiers back to source — into a standalone
+> `packages/mcp-gateway/dist/bin/gateway-local.mjs` that runs under plain
+> `node`. That bundled artifact is what MCP clients launch.
 
 ---
 
