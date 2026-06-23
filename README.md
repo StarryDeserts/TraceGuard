@@ -318,6 +318,7 @@ pnpm demo:live   # govern a live run against bitget-mcp-server --paper-trading
 | [replay-contract.md](docs/replay-contract.md) | Deterministic replay guarantees |
 | [mcp-gateway-contract.md](docs/mcp-gateway-contract.md) | Gateway / tool contract |
 | [demo-script.md](docs/demo-script.md) | Full demo narrative |
+| [submission-zh.md](docs/submission-zh.md) | 中文项目提交描述 (Chinese submission writeup) |
 
 ---
 
