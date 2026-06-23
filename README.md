@@ -154,6 +154,33 @@ The two scenarios are the whole point: the **same proposal** is approved once an
 paper-executed in the happy path, and denied in the fail-closed path where
 **nothing reaches the exchange**.
 
+### Run the live paper-trading demo
+
+`pnpm demo` is deterministic and offline. To go one runnability tier further and
+exercise the same governance against the **real Bitget Agent Hub MCP server** on
+live market data:
+
+```bash
+pnpm demo:live
+```
+
+This boots the TraceGuard gateway in front of `bitget-mcp-server --paper-trading`
+and, reproducibly, proves the governance holds against a real upstream:
+
+- the gateway imports and fingerprints the **real upstream tool manifest**, and
+  asset-movement tools (`withdraw`, `transfer`, …) are excluded by default;
+- a real `spot_get_ticker BTCUSDT` call against Bitget **passes governance**;
+- a raw `spot_place_order` with no Decision Envelope is **rejected**
+  (`DECISION_ENVELOPE_REQUIRED`);
+- an in-policy decision (2× leverage) is **ALLOWED** and an out-of-policy one
+  (10× leverage) is **POLICY_BLOCKED**.
+
+Unlike `pnpm demo`, this needs **network access** and spawns
+`bitget-mcp-server --paper-trading`, which uses **public market data only — no
+API keys, no private endpoints, no real funds**. It runs the live integration
+test gated behind the `TRACEGUARD_LIVE_MCP` env var, so the gate is opt-in and
+the default `pnpm test` suite stays offline.
+
 ### Verifiable usage record
 
 The transcript `pnpm demo` reproduces is committed at
@@ -245,7 +272,8 @@ packages/
   mcp-gateway/        the MCP gateway, internal traceguard_ tools, demo
   testing-fixtures/   shared test fixtures
 docs/                 product spec, threat model, event/data/replay models, demo
-scripts/demo.sh       one-click deterministic demo
+scripts/demo.sh       one-click deterministic (offline) demo
+scripts/demo-live.sh  one-click live paper-trading demo (real bitget-mcp-server)
 ```
 
 ---
@@ -253,9 +281,10 @@ scripts/demo.sh       one-click deterministic demo
 ## Development
 
 ```bash
-pnpm test        # run the full vitest suite
+pnpm test        # run the full vitest suite (offline)
 pnpm typecheck   # tsc --build type gate (vitest does not type-check)
-pnpm demo        # reproduce the governed-run transcript
+pnpm demo        # reproduce the governed-run transcript (offline)
+pnpm demo:live   # govern a live run against bitget-mcp-server --paper-trading
 ```
 
 > Note on running entrypoints: each workspace package resolves to its
