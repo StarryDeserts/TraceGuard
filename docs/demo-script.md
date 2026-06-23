@@ -1,991 +1,395 @@
-# TraceGuard Demo Script
+# TraceGuard Demo Script (terminal)
 
-**Document status:** Draft v0.3
-**Product:** TraceGuard
-**Category:** Trading Agent Safety Runtime
-**Purpose:** Define the 3-minute hackathon demo, judging narrative, fallback plan, and submission messaging.
+**Document status:** v1.0 — terminal-aligned
+**Product:** TraceGuard — a fail-closed safety runtime for AI trading agents on Bitget Agent Hub
+**Purpose:** Define the ≤3-minute hackathon demo video as a **terminal screencast of the actual runnable artifact**, plus the voiceover, shot list, judge Q&A, and fallback plan.
 
-------
+> This script intentionally shows **only what the repository can actually run**:
+> the two one-command demos (`pnpm demo` and `pnpm demo:live`) and the committed
+> evidence they produce. There is no web dashboard, Telegram bot, or replay UI in
+> this repo, so the video must not depict one. Honest self-assessment beats a
+> prettier story the code cannot back up.
 
-## 0. Demo Goal
+---
 
-The demo should make judges understand TraceGuard in one sentence:
+## 0. Demo goal
 
-```text
-Bitget Agent Hub lets AI agents reach trading tools.
-TraceGuard makes those agents governable, approvable, replayable, and auditable.
-```
-
-The demo must not feel like a generic dashboard.
-
-It must show one complete trust story:
-
-```text
-Connect Bitget Agent Hub
-→ import tools
-→ read real Bitget market data
-→ approve a bounded simulated action
-→ block a dangerous action
-→ replay and diff
-→ export evidence
-```
-
-The judge should leave with this understanding:
-
-```text
-AI trading agents are powerful, but risky.
-TraceGuard adds the missing safety runtime between agents and execution.
-```
-
-------
-
-## 1. Demo Constraints
-
-Time limit:
-
-```text
-3 minutes
-```
-
-Assumptions:
-
-```text
-live execution is not required
-public market-data call should be real
-execution should be simulated by default
-Telegram approval should be visible
-Web Control Plane should show Run Detail and Replay
-no sensitive credentials should be shown
-```
-
-The demo should be honest:
-
-```text
-Real market data.
-Real policy check.
-Real Telegram approval.
-Real simulator receipt.
-Real replay result.
-No fake live funds.
-```
-
-------
-
-## 2. Core Narrative
-
-### 2.1 Problem
-
-AI trading agents can now access powerful market and trading tools.
-
-But once an agent can act, developers and operators need to know:
-
-```text
-What did it see?
-Why did it propose this?
-Did it stay inside my limits?
-Who approved it?
-Was anything sent upstream?
-Can I replay it later?
-```
-
-Without TraceGuard, the developer may have tool calls and chat logs, but not a coherent safety runtime.
-
-### 2.2 Solution
-
-TraceGuard inserts a governed runtime between the agent and Bitget Agent Hub.
-
-```text
-Agent proposal
-→ TraceGuard policy
-→ approval when needed
-→ simulated or controlled execution
-→ replayable evidence
-```
-
-### 2.3 Differentiation
-
-TraceGuard is:
-
-```text
-not another trading bot
-not another strategy generator
-not another market dashboard
-not a thin API wrapper
-```
-
-TraceGuard is the safety control center for Bitget Agent Hub trading agents.
-
-------
-
-## 3. Demo Setup
-
-Prepare:
-
-```text
-Web Control Plane open
-Telegram Guardian open on phone or desktop
-AI client or scripted agent prompt ready
-Bitget public market-data call ready
-Normal proposal fixture ready
-Dangerous proposal fixture ready
-Replay page ready
-Evidence export ready
-```
-
-Scenarios:
-
-```text
-A. bounded BTCUSDT proposal
-B. dangerous high-leverage BTCUSDT proposal
-```
-
-Recommended workspace state:
-
-```text
-Provider: Bitget Agent Hub
-Mode: Approval Mode or Safe Demo with approval enabled
-Policy: Bitget Safe Approval
-Allowed instruments: BTCUSDT, ETHUSDT
-Max order notional: 1000 USDT
-Approval threshold: 500 USDT
-Max leverage: 3x
-Simulator: enabled
-Live execution: disabled
-```
-
-------
-
-## 4. Three-Minute Timeline
-
-## 0:00–0:20 — Problem
-
-Script:
-
-```text
-Bitget Agent Hub makes it easy for AI agents to connect to trading tools. But once an agent can act, developers need a runtime that answers: what did the agent see, why did it propose this action, did it stay inside policy, and can we replay the decision later?
-```
-
-Visual:
-
-```text
-AI Agent → Bitget Agent Hub
-```
-
-Then show TraceGuard inserted:
-
-```text
-AI Agent → TraceGuard → Bitget Agent Hub
-```
-
-Key message:
-
-```text
-Tool access is not enough. Trading agents need a safety runtime.
-```
-
-------
-
-## 0:20–0:45 — Connect Bitget Agent Hub
-
-Show:
-
-```text
-Provider: Bitget Agent Hub
-Imported tools: 58
-Manifest fingerprint: verified
-Mode: Safe Demo / Approval Mode
-```
-
-Script:
-
-```text
-TraceGuard connects to Bitget Agent Hub as an MCP gateway. It imports the available tools, fingerprints the manifest, and classifies tools by risk.
-```
-
-Show Tool Inventory rows:
-
-```text
-spot_get_ticker              public_read      approved
-futures_get_funding_rate     public_read      approved
-account_get_balances         account_read     audit
-futures_place_order          trade_like       policy-gated
-account_withdraw             asset_movement   blocked
-```
-
-Key point:
-
-```text
-TraceGuard understands that not all tools carry the same risk.
-```
-
-Do not spend too long here. The Tool Inventory is proof, not the whole product.
-
-------
-
-## 0:45–1:10 — Real Bitget Market Data
-
-Show agent or guided test:
-
-```text
-Read BTCUSDT ticker
-Read funding rate
-Capture market snapshot
-```
-
-Script:
-
-```text
-The agent can still use Bitget market data normally. TraceGuard does not interrupt harmless analysis, but it records the context as evidence for later replay.
-```
-
-Visual:
-
-```text
-Run Detail → Perception
-BTCUSDT ticker captured
-Funding rate captured
-Snapshot stored
-```
-
-Key point:
-
-```text
-Read-only work stays low-friction. Risky actions get governed.
-```
-
-------
-
-## 1:10–1:40 — Bounded Simulated Action + Telegram Approval
-
-Agent proposes:
-
-```text
-Buy 300 USDT BTCUSDT at 2x leverage.
-```
-
-Show Decision Envelope:
-
-```text
-Instrument: BTCUSDT
-Action: Open Long
-Notional: 300 USDT
-Leverage: 2x
-Thesis: momentum positive while funding remains moderate
-```
-
-Policy result:
-
-```text
-REQUIRE_APPROVAL
-```
-
-Telegram message:
-
-```text
-BTCUSDT Buy Request
-Amount: 300 USDT
-Leverage: 2x
-Policy: Passed
-[Approve Once] [Reject] [View Trace]
-```
-
-Click:
-
-```text
-Approve Once
-```
-
-Show:
-
-```text
-Authorization issued
-Authorization consumed
-Simulated execution completed
-```
-
-Script:
-
-```text
-Approval is not broad permission. It is bound to this exact action digest and can be consumed only once.
-```
-
-Key point:
-
-```text
-The user approves one exact action, not a permanent authority expansion.
-```
-
-------
-
-## 1:40–2:10 — Dangerous Action Blocked
-
-Agent proposes:
-
-```text
-Buy 2500 USDT BTCUSDT at 8x leverage.
-```
-
-Show policy result:
-
-```text
-BLOCKED
-```
-
-Matched rules:
-
-```text
-Maximum order size: 1000 USDT
-Requested order size: 2500 USDT
-
-Maximum leverage: 3x
-Requested leverage: 8x
-```
-
-Telegram alert:
-
-```text
-Action blocked by TraceGuard.
-No order was sent.
-```
-
-Script:
-
-```text
-Here the agent is trying to exceed both notional and leverage limits. TraceGuard blocks it before any execution adapter is called.
-```
-
-Most important phrase:
-
-```text
-No order was sent.
-```
-
-This is the emotional peak of the demo. It proves TraceGuard is not just observing; it is enforcing.
-
-------
-
-## 2:10–2:40 — Replay and Diff
-
-Open Replay.
-
-Show two runs:
-
-```text
-Run A: approved simulated action
-Run B: blocked dangerous action
-```
-
-Run Policy Replay on the dangerous action.
+Make a judge understand TraceGuard in one sentence, then prove it on screen:
 
-Show diff:
-
-```text
-Original policy: block
-Replay policy: block
-Result: match
-
-Matched rules:
-max_order_notional_usdt
-max_leverage
-```
-
-Optional stricter policy:
-
-```text
-Policy v2 would also require approval above 200 USDT.
-```
-
-Script:
-
-```text
-TraceGuard is not just live monitoring. Every run can be replayed with the same evidence and compared across policy versions.
-```
-
-Key point:
-
-```text
-This turns agent behavior into something teams can debug and regression-test.
-```
-
-------
-
-## 2:40–2:55 — Evidence Export
-
-Show Evidence Export:
-
-```text
-Run metadata
-Bitget tool manifest hash
-Market snapshot
-Decision envelope
-Policy evaluation
-Approval record
-Execution receipt
-Replay result
-Bundle hash
-```
-
-Script:
-
-```text
-The result is an auditable evidence bundle that developers can use for debugging, incident review, or public demo export.
-```
-
-Key point:
-
-```text
-TraceGuard creates a durable record of why an agent action was allowed, approved, blocked, or replayed.
-```
-
-------
-
-## 2:55–3:00 — Closing
-
-Script:
-
-```text
-Bitget Agent Hub makes AI-native trading possible. TraceGuard makes it safer to trust, easier to debug, and ready to operate.
-```
-
-End with product line:
-
-```text
-TraceGuard: Safety Control Center for Bitget Trading Agents.
-```
-
-------
-
-## 5. What Must Be Real
-
-The demo must include:
-
-```text
-real Bitget public market-data call
-actual imported tool inventory
-actual manifest hash
-actual policy evaluation
-actual Telegram approval callback
-actual simulator receipt
-actual replay result
-actual evidence bundle file
-```
-
-Do not fake these.
-
-If something is simulated, label it as simulated.
-
-------
-
-## 6. What Can Be Simulated
-
-It is acceptable to simulate:
-
-```text
-order execution
-position update
-fill receipt
-PnL
-live exchange submission
-```
-
-But the UI must clearly label:
-
-```text
-Simulated execution
-```
-
-Do not imply real funds were used.
-
-Good phrase:
-
-```text
-We use real Bitget market data and simulated execution by default.
-```
-
-Bad phrase:
-
-```text
-We safely placed a real Bitget trade.
-```
-
-Unless that actually happened and was documented.
-
-------
-
-## 7. UI Checklist
-
-### 7.1 Dashboard
-
-Show:
-
-```text
-Provider connected
-Safe Demo / Approval Mode
-Pending approvals
-Recent blocked actions
-Recent runs
-```
-
-The dashboard should answer:
-
-```text
-Is my agent operating safely right now?
-```
-
-### 7.2 Tool Inventory
-
-Show:
-
-```text
-Bitget tools
-risk class
-status
-manifest hash
-```
-
-The Tool Inventory should answer:
-
-```text
-Which capabilities are exposed to the agent, and which are blocked?
-```
-
-### 7.3 Run Detail
-
-Show timeline:
-
-```text
-Intent
-Perception
-Tool Calls
-Decision
-Policy
-Approval
-Execution
-Evidence
-```
-
-The Run Detail should answer:
-
-```text
-Why did this happen?
-```
-
-### 7.4 Replay
-
-Show:
-
-```text
-Original result
-Replay result
-Diff
-Matched rules
-Evidence status
-```
-
-The Replay page should answer:
-
 ```text
-Can we reproduce or compare this run?
+An agent that can call a trading tool is one hallucination away from an unwanted
+order. TraceGuard makes "place an order" structurally impossible unless a policy
+passed, a human approved that exact action, and the authorization had not
+already been spent — and it records the whole chain so you can replay why.
 ```
-
-### 7.5 Telegram
-
-Show:
-
-```text
-Approve Once
-Reject
-View Trace
-Blocked action alert
-```
-
-Telegram should answer:
-
-```text
-What does the agent want to do, and do I need to act?
-```
-
-------
-
-## 8. Judge-Facing Explanation
-
-### 8.1 If a judge asks why this is infrastructure
 
-Answer:
+The video shows one complete trust story, twice — once offline and
+deterministic, once live against the real Bitget MCP server:
 
 ```text
-TraceGuard is not a strategy. It is the runtime layer that lets developers operate trading agents safely: tool governance, policy enforcement, approvals, replay, and audit evidence.
+import + fingerprint tools → govern a read → require approval for a trade
+→ approve once and execute (simulated) → deny / block the unsafe path
+→ nothing reaches the exchange → the whole run is replayable from the ledger
 ```
 
-### 8.2 If a judge asks why Bitget
+---
 
-Answer:
+## 1. What the video shows (the runnable spine)
 
-```text
-The first adapter is designed around Bitget Agent Hub's MCP tool workflow. We import Bitget tools, classify their trading risk, call Bitget market data, and protect Bitget trade-like actions with policy and approvals.
-```
+Two commands, both in this repo, both reproducible by a judge:
 
-### 8.3 If a judge asks why not just read-only mode
+| Command | Network | What it proves on screen |
+| ------- | ------- | ------------------------ |
+| `pnpm demo` | **offline** | Replays a governed run from the append-only ledger and prints the redacted transcript: happy path (approved → simulated receipt) and fail-closed (denied → nothing sent). A green golden test proves the transcript is generated by the runtime, not a static file. |
+| `pnpm demo:live` | **online** | Boots the gateway in front of the **real** `bitget-mcp-server --paper-trading`: fingerprints the live manifest, blocks asset-movement tools, passes a **real BTCUSDT ticker** call, rejects a raw order with no Decision Envelope, and POLICY_BLOCKs an out-of-policy decision. Public market data only — no keys, no funds. |
 
-Answer:
+The split is the point: `pnpm demo` makes governance **visible** (it prints the
+full transcript); `pnpm demo:live` makes it **real** (a green run is proof the
+same governance holds against the live upstream).
 
-```text
-Read-only mode is useful, but developers need more granular control: some reads should pass, some simulated actions should run, some actions should require approval, and some must be blocked. TraceGuard adds that runtime policy layer plus replay and evidence.
-```
+---
 
-### 8.4 If a judge asks about live trading
+## 2. What is real, simulated, and not claimed
 
-Answer:
+State this verbatim in the video (and it matches the README):
 
+**Real**
 ```text
-The first release defaults to simulation. Live execution is treated as a capability-gated adapter that requires explicit workspace mode, policy approval, idempotency, and reconciliation.
+real governance: manifest fingerprint, policy evaluation, single-use approval,
+  burn-before-execute, fail-closed execution
+real append-only, hash-chained ledger that replays deterministically
+real redaction of credentials and order bodies
+real Bitget public market data (in pnpm demo:live, via bitget-mcp-server)
 ```
-
-### 8.5 If a judge asks whether this competes with Bitget Agent Hub
 
-Answer:
-
+**Simulated by default**
 ```text
-No. Bitget Agent Hub gives agents access to tools. TraceGuard adds the governance layer around that access so developers can operate agents with more control and auditability.
+order execution — the demo uses the `simulator` adapter and labels receipts as
+  simulated. No real funds are ever used.
 ```
-
-------
-
-## 9. Demo Failure Backup
-
-### 9.1 If Telegram fails
-
-Use Web approval page.
-
-Say:
 
+**Not claimed**
 ```text
-Telegram is one approval channel, not the core runtime. The same approval request is available in the Web Control Plane.
+not officially endorsed by Bitget
+does not place real live orders by default; Bitget Agent Hub's own docs note
+  upstream order execution is not fully implemented yet, so the live happy path
+  ends fail-closed (RunFailed) rather than with a filled order — which is exactly
+  the safe outcome TraceGuard is built to produce when execution can't be confirmed
 ```
 
-### 9.2 If Bitget public market data fails
+Good phrase: *"real governance and real market data; execution is simulated by default."*
+Bad phrase: *"we safely placed a real Bitget trade."* (Unless that actually happened and is documented.)
 
-Use previously captured market snapshot.
+---
 
-Say:
+## 3. Three-minute timeline
 
-```text
-Replay and policy evaluation use stored evidence. The system does not depend on live API availability to reconstruct historical runs.
-```
-
-### 9.3 If MCP client fails
+Each beat lists what is **on screen** (a terminal) and the **voiceover**.
 
-Use guided Web safety test that invokes the same Gateway/Adapter path.
+### 0:00–0:20 — Problem
 
-Say:
-
+On screen:
 ```text
-This guided test uses the same policy, event, and simulator path that the MCP Gateway uses.
+README.md thesis block, or a title card with the architecture diagram:
+   AI agent → TraceGuard MCP gateway → bitget-mcp-server → Bitget market data
 ```
-
-### 9.4 If Replay takes too long
-
-Use precomputed replay result, but show event and bundle IDs.
-
-Say:
-
+Voiceover:
 ```text
-This replay result is generated from the stored evidence bundle and linked to the original run.
+Bitget Agent Hub lets an AI agent reach real trading tools over MCP. But once an
+agent can act, one hallucinated tool call can place an order you never wanted.
+TraceGuard sits between the agent and that tool surface and makes a trade
+structurally impossible unless policy passed, a human approved that exact action,
+and the authorization had not already been spent.
 ```
-
-### 9.5 If screen recording is too small to read
 
-Zoom into:
+### 0:20–0:35 — Architecture
 
+On screen:
 ```text
-Policy result
-Telegram approval
-Blocked action reason
-Replay diff
+The README "Architecture" ASCII diagram and the six-tool governed-lifecycle table.
 ```
-
-Do not waste time showing raw JSON.
-
-------
-
-## 10. Submission Assets
-
-Prepare:
-
+Voiceover:
 ```text
-GitHub repo
-README quick start
-Demo video
-Architecture diagram
-Screenshots:
-  Tool Inventory
-  Run Detail
-  Telegram Approval
-  Blocked Action
-  Replay Diff
-  Evidence Export
-Public demo evidence bundle
+It's infrastructure, not a trading bot. The gateway imports the upstream tool
+list, fingerprints it, and classifies every tool by risk. Reads pass; asset
+movement and admin tools are blocked; trade-like calls must run the gauntlet.
 ```
 
-The README should include:
+### 0:35–1:20 — `pnpm demo` (offline, deterministic)
 
+On screen — run it live:
 ```text
-what TraceGuard is
-why Bitget Agent Hub matters
-quick start
-demo scenario
-architecture diagram
-safety boundaries
-what is simulated
-what is not claimed
-```
+$ pnpm demo
 
-------
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
 
-## 11. Video Description
+# TraceGuard — Governed Paper-Trading Demo
+## Governed manifest
+- Manifest hash: 5a71b4116875731722386daed9053712471e4b3d8b9dee7c97944cd1297ae050
+- Governed tools: 1 active, 1 blocked, 1 frozen
 
-Suggested text:
+## Happy path — approval granted, paper order placed
+1. Run run_1 started by demo-agent
+2. Decision dec_1: buy BTCUSDT (spot), size 2500
+3. Approval appr_1 requested — policy outcome: require_approval
+4. Approval granted by ops-desk
+5. Authorization authz_1 consumed
+6. Execution simulated — receipt receipt:exec_1
+7. Run finished — completed
 
-```text
-TraceGuard is a Bitget-first safety runtime for trading agents. It connects to Bitget Agent Hub as an MCP gateway, imports and fingerprints tools, records agent runs, applies deterministic policies, requests one-time approvals through Telegram, blocks dangerous actions, and lets developers replay and export evidence for every run.
+## Fail-closed — approval denied, nothing reaches the exchange
+1. Run run_1 started by demo-agent
+2. Decision dec_1: buy BTCUSDT (spot), size 2500
+3. Approval appr_1 requested — policy outcome: require_approval
+4. Approval denied by ops-desk
+5. Run finished — completed
 ```
-
-Short version:
-
+Voiceover:
 ```text
-A safety control center for Bitget Agent Hub trading agents: policy checks, approvals, blocked actions, replay, and audit evidence.
+Here is the whole thing offline. The same proposal — buy BTCUSDT, size 2500 —
+goes two ways. In the happy path a human approves that exact action, the
+single-use authorization is consumed, and the simulator returns a receipt. In the
+fail-closed path the approval is denied, the run ends, and nothing reaches the
+exchange. And notice the green test above the transcript: it rebuilds this
+transcript in-memory from the real runtime and ledger, then asserts it byte-for-
+byte equals the committed file. A passing run is proof the output is generated by
+the code, not typed into a markdown file.
 ```
 
-------
+### 1:20–2:30 — `pnpm demo:live` (live paper trading)
 
-## 12. Social Post Draft
-
+On screen — run it live, then briefly reveal the test source:
 ```text
-Built TraceGuard for the Bitget AI Hackathon.
-
-Bitget Agent Hub makes it easy for AI agents to access trading tools.
-
-TraceGuard adds the missing safety runtime:
-- tool manifest review
-- policy checks
-- one-time approvals
-- blocked dangerous actions
-- replay and diff
-- auditable evidence
-
-Demo: AI proposes a normal BTC action, Telegram approves it once, then TraceGuard blocks an oversized 8x leverage proposal before execution.
-```
+$ pnpm demo:live
 
-------
+==> Booting the TraceGuard gateway against the REAL bitget-mcp-server
+    (--paper-trading, public market data only — no API keys, no funds)…
 
-## 13. Landing Page Copy
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
 
-Headline:
-
-```text
-Safety Control Center for Bitget Trading Agents
+  Live paper-trading governance verified against bitget-mcp-server
+    - upstream manifest fingerprinted; asset-movement tools blocked
+    - real BTCUSDT ticker call passed governance
+    - raw spot_place_order rejected (DECISION_ENVELOPE_REQUIRED)
+    - in-policy decision ALLOWED; out-of-policy decision POLICY_BLOCKED
 ```
-
-Subheadline:
+Then split-screen or cut to `packages/mcp-gateway/src/gateway-local.integration.test.ts`
+and scroll the four assertions (ticker ok; `spot_place_order {}` →
+`DECISION_ENVELOPE_REQUIRED`; 2× → `ALLOWED`; 10× → `POLICY_BLOCKED`).
 
+Voiceover:
 ```text
-TraceGuard adds policy checks, one-time approvals, replay, and auditable evidence around Bitget Agent Hub trading agents.
+Now the same governance, live. This spawns the real Bitget Agent Hub MCP server
+in paper-trading mode and boots TraceGuard in front of it. A real BTCUSDT ticker
+call — a public read — passes straight through. But a raw place-order with no
+Decision Envelope is rejected before it can reach the exchange. An in-policy
+decision at two-times leverage is allowed; the same decision at ten-times is
+policy-blocked. This is the peak: against the live upstream, the unsafe action
+never makes it out. Execution stays simulated by default — we govern a real run,
+we don't move real funds.
 ```
 
-Hero bullets:
+### 2:30–2:50 — Evidence and replay
 
+On screen:
 ```text
-See what your agent observed
-Control what it can do
-Approve risky actions once
-Block unsafe proposals
-Replay and export evidence
+docs/superpowers/demo/sample-governed-run.md   (the committed transcript)
+docs/superpowers/demo/live-paper-trading-evidence.md  (committed live event log)
 ```
-
-CTA:
-
+Voiceover:
 ```text
-Connect Bitget Agent Hub
+Every step is an append-only, hash-linked event, so runs replay deterministically
+from the ledger. The committed transcript and the committed live-run event log are
+the verifiable usage record: a reviewer can regenerate them and diff byte-for-byte.
 ```
-
-------
 
-## 14. README Opening
+### 2:50–3:00 — Closing
 
-Suggested README opening:
-
+On screen:
 ```text
-# TraceGuard
-
-TraceGuard is a Bitget-first safety runtime for trading agents.
-
-It sits between an AI agent and Bitget Agent Hub, adding deterministic policy checks, one-time approvals, replayable decision traces, and auditable evidence.
-
-Bitget Agent Hub makes AI-native trading tools accessible. TraceGuard helps developers operate those agents safely.
+README footer / repo URL.
 ```
-
-Safety boundary section:
-
+Voiceover:
 ```text
-TraceGuard uses real Bitget market data in the demo.
-Trade-like execution is simulated by default.
-Live execution is disabled unless explicitly configured and capability-detected.
-Withdrawals, transfers, and administrative tools are blocked by default.
+Bitget Agent Hub makes AI-native trading possible. TraceGuard makes it safe to
+trust, easy to debug, and ready to operate — fail-closed by construction.
 ```
 
-------
+---
 
-## 15. Demo Script Full Voiceover
+## 4. Continuous voiceover (one-take recording)
 
-This is the continuous version for recording.
-
 ```text
-Bitget Agent Hub makes it easy for AI agents to connect to trading tools. But once an agent can act, developers need a runtime that answers: what did the agent see, why did it propose this action, did it stay inside policy, and can we replay the decision later?
-
-TraceGuard connects to Bitget Agent Hub as an MCP gateway. It imports the available tools, fingerprints the manifest, and classifies tools by risk. Public market-data tools are approved, account reads are audited, trade-like tools are policy-gated, and asset-movement tools are blocked by default.
-
-Here the agent reads BTCUSDT market data from Bitget. TraceGuard does not interrupt harmless analysis, but it records the market snapshot as evidence for replay.
+Bitget Agent Hub lets an AI agent reach real trading tools over MCP. But once an
+agent can act, one hallucinated tool call can place an order you never wanted.
+TraceGuard sits between the agent and that tool surface and makes a trade
+structurally impossible unless policy passed, a human approved that exact action,
+and the authorization had not already been spent.
 
-Now the agent proposes a bounded action: buy 300 USDT of BTCUSDT at 2x leverage. TraceGuard validates the Decision Envelope and evaluates the active policy. This action is within limits but requires approval, so TraceGuard sends a Telegram approval request.
+It's infrastructure, not a trading bot. The gateway imports the upstream tool
+list, fingerprints it, and classifies every tool by risk. Reads pass; asset
+movement and admin tools are blocked; trade-like calls must run the gauntlet.
 
-I approve once. This does not grant broad permission. It creates a single-use authorization bound to this exact action digest. The simulator executes the action and stores an execution receipt.
+Here is the whole thing offline. The same proposal — buy BTCUSDT, size 2500 —
+goes two ways. In the happy path a human approves that exact action, the
+single-use authorization is consumed, and the simulator returns a receipt. In the
+fail-closed path the approval is denied and nothing reaches the exchange. The
+green test above the transcript rebuilds it from the real runtime and ledger and
+asserts it equals the committed file byte-for-byte — proof the output is generated
+by the code, not typed in by hand.
 
-Now the agent proposes a dangerous action: buy 2500 USDT of BTCUSDT at 8x leverage. This violates both the max order size and max leverage rules. TraceGuard blocks it before execution. No order was sent.
+Now the same governance, live. This spawns the real Bitget MCP server in
+paper-trading mode and boots TraceGuard in front of it. A real BTCUSDT ticker call
+passes straight through. A raw place-order with no Decision Envelope is rejected
+before it can reach the exchange. An in-policy decision at two-times leverage is
+allowed; the same decision at ten-times is policy-blocked. Against the live
+upstream, the unsafe action never makes it out — and execution stays simulated by
+default, so no real funds move.
 
-Finally, we open Replay. TraceGuard reconstructs the run from stored evidence, shows the same policy result, and lets us compare outcomes across policy versions. We can export an evidence bundle containing the Bitget tool manifest hash, market snapshot, decision envelope, policy evaluation, approval record, execution receipt, and replay result.
+Every step is an append-only, hash-linked event, so runs replay deterministically
+from the ledger. The committed transcript and live event log are the verifiable
+usage record a reviewer can regenerate and diff.
 
-Bitget Agent Hub makes AI-native trading possible. TraceGuard makes it safer to trust, easier to debug, and ready to operate.
+Bitget Agent Hub makes AI-native trading possible. TraceGuard makes it safe to
+trust, easy to debug, and ready to operate — fail-closed by construction.
 ```
 
-------
+---
 
-## 16. Shot List
+## 5. Shot list (terminal)
 
-### Shot 1
-
 ```text
-Architecture diagram:
-AI Agent → TraceGuard → Bitget Agent Hub
+Shot 1  Title / architecture diagram (README): Agent → TraceGuard → bitget-mcp-server
+Shot 2  Six-tool governed-lifecycle table (README)
+Shot 3  $ pnpm demo  — manifest hash + governed tools (1 active / 1 blocked / 1 frozen)
+Shot 4  pnpm demo transcript — happy path: approval granted → simulated receipt
+Shot 5  pnpm demo transcript — fail-closed: approval denied → nothing reaches exchange
+Shot 6  Green golden test line above the transcript (runtime-generated, not static)
+Shot 7  $ pnpm demo:live  — boot banner against real bitget-mcp-server --paper-trading
+Shot 8  pnpm demo:live  — green pass + verification banner (ticker ok / order rejected / blocked)
+Shot 9  integration test source — the four governance assertions
+Shot 10 Committed evidence files (transcript + live event log)
+Shot 11 README footer / repo URL
 ```
-
-### Shot 2
 
-```text
-Tool Inventory:
-Bitget tools classified by risk
-```
+---
 
-### Shot 3
+## 6. Recording setup and tips
 
 ```text
-Run Detail:
-BTCUSDT market snapshot captured
+Use a large terminal font (judges watch on small windows). 110–120 cols.
+Clear the screen before each command (clear) so output starts at the top.
+Run `pnpm install` BEFORE recording so the demo output isn't buried under install logs.
+Run `pnpm demo` once before recording to warm vitest, so the take is fast.
+For pnpm demo:live, confirm network first; it reaches Bitget public endpoints.
+Do not show any .env, API key, or credential. The demos need none — keep it that way.
+Zoom into: the manifest hash, "nothing reaches the exchange", and "POLICY_BLOCKED".
+Keep it under 3:00. The offline demo is the visual core; the live demo is the proof.
 ```
-
-### Shot 4
 
-```text
-Decision Envelope:
-300 USDT BTCUSDT at 2x
-```
+---
 
-### Shot 5
+## 7. Judge-facing Q&A
 
+**Why is this infrastructure, not a strategy?**
 ```text
-Telegram:
-Approve Once
+TraceGuard never decides what to trade. It governs how an agent is allowed to use
+trading tools: manifest risk-classification, policy enforcement, single-use
+approval, burn-before-execute, fail-closed execution, and a replayable audit
+ledger. That's a runtime layer, not a strategy.
 ```
-
-### Shot 6
 
+**Why Bitget?**
 ```text
-Execution:
-Simulated receipt
+The first adapter targets Bitget Agent Hub's MCP tool workflow. We import Bitget
+tools, fingerprint the manifest, classify trading risk, call real Bitget market
+data, and gate trade-like actions with policy and approval. The core ledger and
+policy engine are provider-agnostic; Bitget is the first integration.
 ```
 
-### Shot 7
-
+**Why not just a read-only mode?**
 ```text
-Blocked action:
-2500 USDT at 8x
+Read-only is too coarse. Real agents need granularity: some reads pass, some
+trade-like actions need approval, some must be blocked, and every action must be
+auditable and replayable. TraceGuard is that policy-plus-replay runtime.
 ```
 
-### Shot 8
-
+**What about live trading?**
 ```text
-Replay Diff:
-Original vs Replay
+Live execution is a capability-gated adapter (`bitget_live`), not a default. An
+upstream error throws and the run goes RunFailed — fail-closed. Bitget's own docs
+note upstream order execution isn't fully implemented yet, so the live happy path
+currently ends fail-closed rather than with a filled order. That's the designed
+safe outcome, and it's disclosed, not hidden.
 ```
-
-### Shot 9
 
+**Does this compete with Bitget Agent Hub?**
 ```text
-Evidence Export:
-Bundle hash
+No. Agent Hub gives agents access to tools. TraceGuard adds the governance layer
+around that access so developers can operate agents with control and auditability.
 ```
 
-------
+---
 
-## 17. What to Avoid in the Demo
+## 8. Failure backup
 
-Do not spend time on:
-
 ```text
-settings pages
-generic charts
-raw database tables
-raw JSON payloads
-long architecture explanations
-multi-provider future roadmap
-complex policy editor
-```
+If the network is down (pnpm demo:live can't reach Bitget):
+  Fall back to `pnpm demo` (fully offline) and walk the committed transcript and
+  the committed live event log. Say: "the live path needs network; the governance
+  it proves is the same path the offline demo replays deterministically."
 
-Do show:
+If vitest is slow on first run:
+  Run it once before recording to warm the transform cache, then record the
+  second, fast run.
 
-```text
-agent action
-policy result
-approval
-block
-replay
-evidence
+If the terminal output scrolls too fast:
+  Pipe through a pager or scroll back; the transcript is short and fits one screen.
 ```
-
-The demo should be a story, not a feature tour.
-
-------
-
-## 18. Strongest Winning Angle
 
-The strongest angle is not:
+---
 
-```text
-We built another AI trading assistant.
-```
+## 9. Strongest angle and final principle
 
-The strongest angle is:
+The strongest angle is **not** "we built another AI trading assistant." It is:
 
 ```text
-As trading agents become easier to build through Bitget Agent Hub, developers need a safety runtime that makes agent behavior controlled, approved, replayable, and auditable.
+As trading agents get easier to build on Bitget Agent Hub, developers need a
+safety runtime that makes agent behavior policy-bounded, human-approved,
+fail-closed, replayable, and auditable. TraceGuard is that runtime.
 ```
-
-This positions TraceGuard as infrastructure, not strategy.
-
-------
-
-## 19. Final Demo Principle
-
-Do not show many features.
 
-Show one complete trust story:
+Final principle — don't show many features, show one complete trust story:
 
 ```text
 The agent can act.
-TraceGuard sees it.
-TraceGuard checks it.
-The user approves it.
-TraceGuard blocks what is unsafe.
-The whole thing can be replayed.
+TraceGuard governs it.
+A human approves one exact action.
+The unsafe action is blocked — nothing reaches the exchange.
+The whole run replays from the ledger.
 ```
 
-That is the product.
+---
+
+## 10. Submission copy (terminal-honest)
+
+**Video description**
+```text
+TraceGuard is a fail-closed safety runtime for AI trading agents on Bitget Agent
+Hub. It wraps bitget-mcp-server as an MCP gateway, fingerprints and risk-classifies
+tools, requires a Decision Envelope and single-use human approval for trade-like
+actions, burns the authorization before executing, and records a hash-chained,
+replayable ledger. Demo: one offline command replays a governed run (approved vs.
+denied); one online command proves the same governance live against
+bitget-mcp-server --paper-trading using public market data only — no keys, no funds.
+```
+
+**Short version**
+```text
+A fail-closed safety runtime for Bitget Agent Hub trading agents: tool governance,
+policy checks, single-use approvals, blocked unsafe actions, and a replayable
+audit ledger. Reproducible with `pnpm demo` (offline) and `pnpm demo:live` (live
+paper trading).
+```
