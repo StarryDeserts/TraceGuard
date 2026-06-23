@@ -1,0 +1,284 @@
+# TraceGuard
+
+**A fail-closed safety runtime for AI trading agents on Bitget Agent Hub.**
+
+Bitget Agent Hub lets an AI agent reach real trading tools over MCP. TraceGuard
+sits *between* the agent and that tool surface and makes every trade-like action
+**governable, approvable, single-use, replayable, and auditable** — without
+slowing down harmless read-only analysis.
+
+The core thesis is one sentence:
+
+> An agent that can call a trading tool is one hallucination away from an
+> unwanted order. TraceGuard makes "place an order" structurally impossible
+> unless a policy passed, a human approved *that exact action*, and the
+> authorization had not already been spent — and it records the whole chain so
+> you can replay why.
+
+This repository is a working TypeScript implementation of that runtime with a
+**deterministic, offline, one-command demo** (`pnpm demo`) so anyone can
+reproduce a governed run without an exchange account.
+
+---
+
+## Why this is infrastructure, not a trading bot
+
+TraceGuard does not decide *what* to trade. It governs *how* an agent is allowed
+to use trading tools:
+
+- **Manifest governance** — imports the upstream tool list, fingerprints it, and
+  classifies every tool by risk (`public_read`, `account_read`, `trade_like`,
+  `asset_movement`, `administrative`). Public reads pass; asset movement and
+  admin tools are blocked by default; unknown tools are frozen pending review.
+- **Policy evaluation** — trade-like proposals must carry a structured Decision
+  Envelope and are checked against bounded limits (instrument allow-list,
+  notional, leverage, approval thresholds) before anything is forwarded.
+- **Single-use human approval** — an approval is bound to one exact action
+  digest and can be consumed exactly once ("burn-before-execute"). Approving an
+  action is not granting standing permission.
+- **Fail-closed execution** — if policy fails, approval is denied, the
+  authorization was already spent, or the upstream result is an error, **no
+  order reaches the exchange** and the run ends `RunFailed`.
+- **Hash-chained audit ledger** — every step is an append-only, hash-linked
+  event. Runs replay deterministically from the ledger.
+- **Redaction** — credentials and raw order bodies never enter the ledger or the
+  agent-facing transcript.
+
+---
+
+## Architecture
+
+```
+        AI trading agent  (Claude, Codex, any MCP client)
+                     |
+                     |  tool calls + Decision Envelopes
+                     v
+   +-- TraceGuard MCP gateway --------------------------------
+   |      manifest governance    (risk classes)
+   |      policy evaluation      (bounded limits)
+   |      single-use human approval
+   |      burn-before-execute
+   |      fail-closed execution adapter
+   |      redaction
+   |      hash-chained audit ledger
+   +---------------------------------------------------------
+                     |
+                     |  only authorized, in-policy actions
+                     v
+         bitget-mcp-server   (Bitget Agent Hub MCP server)
+                     |
+                     v
+            Bitget market data  /  paper trading
+```
+
+TraceGuard is **Bitget-first in product** and **provider-neutral in
+architecture**: the first adapter targets Bitget Agent Hub, while the core
+ledger, policy engine, and execution interfaces are provider-agnostic.
+
+### The governed lifecycle
+
+A protected run moves through six internal `traceguard_` tools the gateway
+exposes alongside the upstream Bitget tools. Each one appends to the ledger and
+returns a governance envelope at `result.traceguard`:
+
+| Step | Tool | What it enforces |
+| ---- | ---- | ---------------- |
+| 1 | `traceguard_start_run` | Open an audited run against a fingerprinted manifest. |
+| 2 | `traceguard_record_decision` | Capture the agent's Decision Envelope (instrument, action, thesis, requested notional). |
+| 3 | `traceguard_request_execution` | Evaluate policy; if it requires approval, mint a single-use authorization. |
+| 4 | `traceguard_check_approval` | Resolve the human decision (granted / denied) for that exact action. |
+| 5 | `traceguard_execute_authorized_action` | Burn the authorization, then call the execution adapter — fail-closed. |
+| 6 | `traceguard_finish_run` | Close the run and seal the ledger chain. |
+
+---
+
+## Quick start
+
+### Requirements
+
+- **Node.js ≥ 22.12** (developed on v24)
+- **pnpm** (developed on 10.x) — `npm install -g pnpm` or `corepack enable`
+
+The default demo is fully **offline** and needs **no exchange credentials**.
+
+### Install
+
+```bash
+git clone git@github.com:StarryDeserts/TraceGuard.git
+cd TraceGuard
+pnpm install
+```
+
+### Run the demo
+
+```bash
+pnpm demo
+```
+
+This reproduces the governed run from the append-only ledger and prints the
+redacted transcript. It first runs a test that rebuilds the transcript in-memory
+from the real gateway runtime and asserts it byte-for-byte equals the committed
+sample — so a green run is proof the output is generated by the code, not a
+static file. Expected output:
+
+```text
+==> Reproducing the governed run (deterministic backend, no live exchange)…
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+
+================================================================
+  Governed run transcript — replayed from the append-only ledger
+================================================================
+
+# TraceGuard — Governed Paper-Trading Demo
+...
+## Happy path — approval granted, paper order placed
+1. Run run_1 started by demo-agent — Governed paper-trading demo
+2. Decision dec_1: buy BTCUSDT (spot), size 2500
+3. Approval appr_1 requested — policy outcome: require_approval
+4. Approval granted by ops-desk
+5. Authorization authz_1 consumed
+6. Execution simulated — receipt receipt:exec_1
+7. Run finished — completed
+
+## Fail-closed — approval denied, nothing reaches the exchange
+1. Run run_1 started by demo-agent — Governed paper-trading demo
+2. Decision dec_1: buy BTCUSDT (spot), size 2500
+3. Approval appr_1 requested — policy outcome: require_approval
+4. Approval denied by ops-desk
+5. Run finished — completed
+```
+
+The two scenarios are the whole point: the **same proposal** is approved once and
+paper-executed in the happy path, and denied in the fail-closed path where
+**nothing reaches the exchange**.
+
+### Verifiable usage record
+
+The transcript `pnpm demo` reproduces is committed at
+[`docs/superpowers/demo/sample-governed-run.md`](docs/superpowers/demo/sample-governed-run.md).
+It is the sample input/output a reviewer can regenerate independently — the
+demo's golden test asserts the runtime still produces exactly that file.
+
+---
+
+## Integrating TraceGuard with Bitget Agent Hub
+
+### 1. Make the Bitget tools available
+
+Add the Bitget Agent Hub MCP server to your AI client (paper trading needs no
+live keys):
+
+```bash
+npx -y bitget-mcp-server --paper-trading
+```
+
+To register it with an MCP-capable client (example for Claude):
+
+```bash
+claude mcp add -s user bitget -- npx -y bitget-mcp-server --paper-trading
+```
+
+### 2. Put TraceGuard in front
+
+TraceGuard wraps that upstream server as an MCP gateway. The gateway:
+
+1. calls `tools/list` upstream, maps and fingerprints each tool, and assigns a
+   risk class;
+2. exposes the upstream read tools plus the six `traceguard_` governance tools;
+3. routes every trade-like call through the policy → approval → burn → execute
+   pipeline above.
+
+The same path is exercised live in this repo against `bitget-mcp-server
+--paper-trading` via the gateway's live backend (`StdioUpstreamClient` spawning
+the server, with the `bitget_live` execution adapter). The deterministic demo
+substitutes a fake upstream and a simulator adapter so it runs offline and
+byte-reproducibly.
+
+### 3. Execution adapters and capability gating
+
+| Adapter | When | Behavior |
+| ------- | ---- | -------- |
+| `simulator` (default) | Safe demo, replay | Produces a receipt without touching any exchange. |
+| `bitget_live` | Only when explicitly selected | Forwards to `bitget-mcp-server`; an upstream error throws and the run goes `RunFailed` (fail-closed). |
+
+Live execution is treated as a capability-gated adapter, not a default. See
+[`docs/bitget-agent-hub-integration.md`](docs/bitget-agent-hub-integration.md)
+for the full capability-detection and tool-classification design.
+
+---
+
+## Safety boundaries — what is real, simulated, and not claimed
+
+**Real:**
+- real governance logic (manifest fingerprint, policy evaluation, single-use
+  approval, burn-before-execute, fail-closed execution);
+- a real append-only, hash-chained ledger that replays deterministically;
+- real redaction of credentials and order bodies.
+
+**Simulated by default:**
+- order execution (the demo uses the `simulator` adapter and labels receipts as
+  simulated). No real funds are ever used.
+
+**Not claimed:**
+- not officially endorsed by Bitget;
+- does not guarantee safe trading or eliminate market risk;
+- does not perform live order execution by default. Note Bitget Agent Hub's own
+  docs state order execution is not fully implemented upstream yet, so the
+  `bitget_live` happy path currently ends fail-closed (`RunFailed`) rather than
+  with a filled order — which is exactly the safe outcome TraceGuard is built to
+  produce when execution cannot be confirmed.
+
+---
+
+## Repository layout
+
+```
+packages/
+  schemas/            zod schemas: events, Decision Envelope, scalars
+  event-ledger/       append-only hash-chained ledger + canonical JSON
+  tool-manifest/      upstream tool import, fingerprinting, risk classification
+  policy-engine/      deterministic policy evaluation
+  domain/             execution adapter + transition types
+  runtime/            simulator + bitget_live execution adapters, orchestrator
+  mcp-gateway/        the MCP gateway, internal traceguard_ tools, demo
+  testing-fixtures/   shared test fixtures
+docs/                 product spec, threat model, event/data/replay models, demo
+scripts/demo.sh       one-click deterministic demo
+```
+
+---
+
+## Development
+
+```bash
+pnpm test        # run the full vitest suite
+pnpm typecheck   # tsc --build type gate (vitest does not type-check)
+pnpm demo        # reproduce the governed-run transcript
+```
+
+> Note on running entrypoints: each workspace package resolves to its
+> TypeScript source (`"main": "./src/index.ts"`), so the bins are run through
+> **vitest** (the project's TS runner), not `node dist/...`. `pnpm demo` wraps
+> that for you.
+
+---
+
+## Documentation
+
+| Doc | Purpose |
+| --- | ------- |
+| [product-spec.md](docs/product-spec.md) | What TraceGuard is and the v0.1 slice |
+| [architecture.md](docs/architecture.md) | System architecture |
+| [bitget-agent-hub-integration.md](docs/bitget-agent-hub-integration.md) | Bitget-first integration design |
+| [threat-model.md](docs/threat-model.md) | Threats and mitigations |
+| [event-model.md](docs/event-model.md) · [data-model.md](docs/data-model.md) | Ledger events and aggregates |
+| [policy-semantics.md](docs/policy-semantics.md) | Policy evaluation semantics |
+| [replay-contract.md](docs/replay-contract.md) | Deterministic replay guarantees |
+| [mcp-gateway-contract.md](docs/mcp-gateway-contract.md) | Gateway / tool contract |
+| [demo-script.md](docs/demo-script.md) | Full demo narrative |
+
+---
+
+Built for the Bitget AI Base Camp Hackathon S1 — Trading Infra track.

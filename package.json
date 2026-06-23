@@ -9,7 +9,8 @@
     "build": "tsc --build",
     "typecheck": "tsc --build --pretty",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "demo": "bash scripts/demo.sh"
   },
   "devDependencies": {
     "@types/node": "^22.19.20",
