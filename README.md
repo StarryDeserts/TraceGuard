@@ -183,10 +183,21 @@ the default `pnpm test` suite stays offline.
 
 ### Verifiable usage record
 
-The transcript `pnpm demo` reproduces is committed at
-[`docs/superpowers/demo/sample-governed-run.md`](docs/superpowers/demo/sample-governed-run.md).
-It is the sample input/output a reviewer can regenerate independently — the
-demo's golden test asserts the runtime still produces exactly that file.
+Two committed artifacts back the runnability claim:
+
+- **Offline transcript** —
+  [`docs/superpowers/demo/sample-governed-run.md`](docs/superpowers/demo/sample-governed-run.md),
+  the sample input/output `pnpm demo` reproduces. The demo's golden test asserts
+  the runtime still produces exactly that file byte-for-byte.
+- **Live event log** —
+  [`docs/superpowers/demo/live-paper-trading-evidence.md`](docs/superpowers/demo/live-paper-trading-evidence.md),
+  a hash-chained, timestamped ledger captured running against the real
+  `bitget-mcp-server --paper-trading`. It shows the full burn-before-execute
+  chain fail-closing at the live exchange, and an approval-denied run where
+  nothing reaches the exchange. The raw logs
+  ([happy](docs/superpowers/demo/live-events-happy.json) ·
+  [denied](docs/superpowers/demo/live-events-denied.json)) are committed so a
+  reviewer can verify the hash chain independently.
 
 ---
 

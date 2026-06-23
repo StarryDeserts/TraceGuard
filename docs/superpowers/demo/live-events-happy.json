@@ -1,0 +1,644 @@
+[
+  {
+    "id": "evt_d08c77f6-bb96-4b1c-9321-9f71667b1ac1",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_manifest",
+    "aggregateId": "tmv_demo",
+    "eventType": "ToolManifestImported",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.726Z",
+    "recordedAt": "2026-06-22T10:46:55.726Z",
+    "actorType": "system",
+    "payload": {
+      "toolManifestVersionId": "tmv_demo",
+      "providerConnectionId": "pc_bitget_demo",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "normalizationVersion": 1,
+      "tools": [
+        {
+          "name": "cancel_withdrawal",
+          "riskClass": "asset_movement",
+          "schemaHash": "555e9d5fc1d4ee2323b09f70168015b3bbdab5c560ba81092c22b52a157caa7a"
+        },
+        {
+          "name": "futures_cancel_orders",
+          "riskClass": "trade_like",
+          "schemaHash": "0dae68ec3137b7e07e817d0e8e6777907a9a3f70fcca58c1e3bfe353ecad3287"
+        },
+        {
+          "name": "futures_get_candles",
+          "riskClass": "public_read",
+          "schemaHash": "9fd5a3d4a09e5f2951707c9910342b2b8ec5576f781912d4a2a3043489717229"
+        },
+        {
+          "name": "futures_get_contracts",
+          "riskClass": "public_read",
+          "schemaHash": "45896cfafc9e24de3b33dd67602cbdbcde2893140e895ff0a19545133d6a27e2"
+        },
+        {
+          "name": "futures_get_depth",
+          "riskClass": "public_read",
+          "schemaHash": "5d3cbbe302390d4c341cc42c7d9a2350ad785e4ece46a34133634a02b0558f11"
+        },
+        {
+          "name": "futures_get_fills",
+          "riskClass": "account_read",
+          "schemaHash": "b399188cfab3ddf4f31fb904dfb60772e2d174999838687d4afa2f443710f5fb"
+        },
+        {
+          "name": "futures_get_funding_rate",
+          "riskClass": "public_read",
+          "schemaHash": "f65aca0eaa26f9035ecbabed3d016d4e9bf17dff127b732e6c04cf9088c143c5"
+        },
+        {
+          "name": "futures_get_open_interest",
+          "riskClass": "public_read",
+          "schemaHash": "0333130b66ab60a5dfe41dbda5bd88cc302193945a50fc88c7b9e749711ab8f1"
+        },
+        {
+          "name": "futures_get_orders",
+          "riskClass": "account_read",
+          "schemaHash": "4156f2f92fbe9a12357018761971042d36d2efeac70eed807856bf82cd4e889b"
+        },
+        {
+          "name": "futures_get_positions",
+          "riskClass": "account_read",
+          "schemaHash": "9c5a287faac0b646ac57796db25ef5b3ca515f854533510cdbdd852f3de7daa0"
+        },
+        {
+          "name": "futures_get_ticker",
+          "riskClass": "public_read",
+          "schemaHash": "0ae618103c7670677ca1c30c38a02aa2f0abb0be7d7deaab42f9dd5116768a61"
+        },
+        {
+          "name": "futures_get_trades",
+          "riskClass": "public_read",
+          "schemaHash": "a691d4e5615dcc01b84697bbe55be661485243e4c5e23e9d0b4d714d37897d5f"
+        },
+        {
+          "name": "futures_place_order",
+          "riskClass": "trade_like",
+          "schemaHash": "bf40dbc94dc3e6ed08d46cfe8befd41a612c08c47f9d659246d7f105b3181c17"
+        },
+        {
+          "name": "futures_set_leverage",
+          "riskClass": "trade_like",
+          "schemaHash": "c72d60725f30b1a1d66667df141b3f12d7829ac91a194b99b9974db1042b2462"
+        },
+        {
+          "name": "futures_update_config",
+          "riskClass": "trade_like",
+          "schemaHash": "d9fec1edce3ba3883b95618c605335685d1585a0ab3c230bf42ee79a1c82199a"
+        },
+        {
+          "name": "get_account_assets",
+          "riskClass": "account_read",
+          "schemaHash": "1c7697df52adf873216e5c74e6ccb21365442b2dc3e78d3a6bccafb0ea69f943"
+        },
+        {
+          "name": "get_account_bills",
+          "riskClass": "account_read",
+          "schemaHash": "e80316f00fa5fd41465b2ba8283bc00cb3de72bc95d59ab8b00b24cd967dc0d9"
+        },
+        {
+          "name": "get_deposit_address",
+          "riskClass": "asset_movement",
+          "schemaHash": "477cd93edaa08e279167f69b2a20ebf8a7a66785ebcbdc2c753a36ac7e8a9a2f"
+        },
+        {
+          "name": "get_transaction_records",
+          "riskClass": "account_read",
+          "schemaHash": "b50b296e4bb2c1c6eb0cd2da23d99604b08bf5bf7743a7e1075ce5e02c6c398a"
+        },
+        {
+          "name": "manage_subaccounts",
+          "riskClass": "administrative",
+          "schemaHash": "69472f01fd14bdbe2eb1cbb25e6d1fbf0058fe957562a370585415c5d9a640ca"
+        },
+        {
+          "name": "spot_cancel_orders",
+          "riskClass": "trade_like",
+          "schemaHash": "092cb7f5aa17e4c56c2692aed2ed53e9f1ec5e21cf4eda051ccf2c7d82f94fc1"
+        },
+        {
+          "name": "spot_cancel_plan_orders",
+          "riskClass": "trade_like",
+          "schemaHash": "bc7fd6eafc8aacaadc4bb39dbfb6cbb1ed11b02c809ab56acc6a8a5d11c1f408"
+        },
+        {
+          "name": "spot_get_candles",
+          "riskClass": "public_read",
+          "schemaHash": "841ee625058ef856ffc72f8044e7dffe5c56ad3e81fa438dfbca771a301d126c"
+        },
+        {
+          "name": "spot_get_depth",
+          "riskClass": "public_read",
+          "schemaHash": "4605b94ddad9ad81a04942c65ba9452df00ee0efafea3c17bdf9376968fb106e"
+        },
+        {
+          "name": "spot_get_fills",
+          "riskClass": "account_read",
+          "schemaHash": "8c8fa7417670d218258de8d3d78c89d1ce8ddf63121f363d0200f4a1cfa5691d"
+        },
+        {
+          "name": "spot_get_orders",
+          "riskClass": "account_read",
+          "schemaHash": "ac76265347a5947f58ff66c41338615e406dd4fb2b56e7ec085c2b7675add3b0"
+        },
+        {
+          "name": "spot_get_plan_orders",
+          "riskClass": "account_read",
+          "schemaHash": "b41ee7d8d6620b87f5393644c4d97c1045d205e58d39063b70178d47f676730a"
+        },
+        {
+          "name": "spot_get_symbols",
+          "riskClass": "public_read",
+          "schemaHash": "6c4d17f67154e55880173d3703a1a3a27807138fe6fc953078e136a247b22090"
+        },
+        {
+          "name": "spot_get_ticker",
+          "riskClass": "public_read",
+          "schemaHash": "1c7bddfdabf5924d336ba69e17c2858fd09c36a0d5e59b7370c5835b00b07a55"
+        },
+        {
+          "name": "spot_get_trades",
+          "riskClass": "public_read",
+          "schemaHash": "2d9ded02e546983890b456e34ae3e1d07a0762f1772057409e934ea2b09cb75e"
+        },
+        {
+          "name": "spot_modify_order",
+          "riskClass": "trade_like",
+          "schemaHash": "889407941df63050def839ff9ffecc8daf070fa219f13ffa570189c894c114a7"
+        },
+        {
+          "name": "spot_place_order",
+          "riskClass": "trade_like",
+          "schemaHash": "79123e731f41c81853fcdbe1b7233d6938d69034530c555ad3f6771dc82879a5"
+        },
+        {
+          "name": "spot_place_plan_order",
+          "riskClass": "trade_like",
+          "schemaHash": "73b72df29aeae1cc4afd60e85ce75175ce0dc57a7a3e6ed14ad05092f0b7b1d7"
+        },
+        {
+          "name": "system_get_capabilities",
+          "riskClass": "public_read",
+          "schemaHash": "cd1a463c46d6264134447db17a8c3c7abe5b9a2488c6d759fea66da1f96b133e"
+        },
+        {
+          "name": "transfer",
+          "riskClass": "asset_movement",
+          "schemaHash": "954d089fa21ef9a39f0f5df444a5470e73a11115e41e399f7430d4f3e7138a68"
+        },
+        {
+          "name": "withdraw",
+          "riskClass": "asset_movement",
+          "schemaHash": "74a282f79547bc12b1daffee7b2dbe6783d556315fb94fbd0bf6383efbf88867"
+        }
+      ]
+    },
+    "payloadHash": "37ef5f872d42a4a1bfdbcd4b8dc3e5a25d8ea0fb9fb1ba3df7ee1ef723313a46",
+    "eventHash": "eb0ac28d6147b916b606d3cdfd4cb2f623bcc96278db4b7095ba3c949be393ea"
+  },
+  {
+    "id": "evt_5d596aa5-6154-4adc-a3d5-c19e786dc81e",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_definition",
+    "aggregateId": "pc_bitget_demo:cancel_withdrawal",
+    "eventType": "ToolBlocked",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.727Z",
+    "recordedAt": "2026-06-22T10:46:55.727Z",
+    "actorType": "system",
+    "payload": {
+      "providerConnectionId": "pc_bitget_demo",
+      "toolName": "cancel_withdrawal",
+      "riskClass": "asset_movement",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "reasonCode": "risk_class_default"
+    },
+    "payloadHash": "6b2b09ee2fc3cdd9b826403d04a5e04aca2dac5375531cd796435fee5cffbe62",
+    "eventHash": "43b55701e38c3a4990bb32e30aea06a0c530c2148857acb1795be431bac60479",
+    "previousEventHash": "eb0ac28d6147b916b606d3cdfd4cb2f623bcc96278db4b7095ba3c949be393ea"
+  },
+  {
+    "id": "evt_3cdd5db3-32c5-40c4-80c5-ba61caf792f6",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_definition",
+    "aggregateId": "pc_bitget_demo:get_deposit_address",
+    "eventType": "ToolBlocked",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.728Z",
+    "recordedAt": "2026-06-22T10:46:55.728Z",
+    "actorType": "system",
+    "payload": {
+      "providerConnectionId": "pc_bitget_demo",
+      "toolName": "get_deposit_address",
+      "riskClass": "asset_movement",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "reasonCode": "risk_class_default"
+    },
+    "payloadHash": "c9418901ed5d3c8db6d81bb6a6dcf9083e4f7be907406975fa3f6671c3625b24",
+    "eventHash": "cc97afb2bcccb65ab3be45aa29de608fb196edc4e6bd8258af768f6e545449bd",
+    "previousEventHash": "43b55701e38c3a4990bb32e30aea06a0c530c2148857acb1795be431bac60479"
+  },
+  {
+    "id": "evt_0eaab5cd-9d59-471a-99ec-cf6c28912be9",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_definition",
+    "aggregateId": "pc_bitget_demo:manage_subaccounts",
+    "eventType": "ToolBlocked",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.728Z",
+    "recordedAt": "2026-06-22T10:46:55.728Z",
+    "actorType": "system",
+    "payload": {
+      "providerConnectionId": "pc_bitget_demo",
+      "toolName": "manage_subaccounts",
+      "riskClass": "administrative",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "reasonCode": "risk_class_default"
+    },
+    "payloadHash": "56e03fa0e66f9fa3a815772732e005b95207aef7da6fc9a2e5e266917d68d0d5",
+    "eventHash": "e7a3cfb0420935d013b447a45801fe7f075d1abbb62269bbae9afbb140f50541",
+    "previousEventHash": "cc97afb2bcccb65ab3be45aa29de608fb196edc4e6bd8258af768f6e545449bd"
+  },
+  {
+    "id": "evt_19f339aa-7884-4859-870b-be057d7ffc4d",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_definition",
+    "aggregateId": "pc_bitget_demo:transfer",
+    "eventType": "ToolBlocked",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.728Z",
+    "recordedAt": "2026-06-22T10:46:55.728Z",
+    "actorType": "system",
+    "payload": {
+      "providerConnectionId": "pc_bitget_demo",
+      "toolName": "transfer",
+      "riskClass": "asset_movement",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "reasonCode": "risk_class_default"
+    },
+    "payloadHash": "869074003dd6c6fb13bcd5ef216281461263f5b6860594652589defb25902b84",
+    "eventHash": "e6a6d71a24b33968666f9674bb0d7ffc7508f67feabbaad78b479afc1af3689c",
+    "previousEventHash": "e7a3cfb0420935d013b447a45801fe7f075d1abbb62269bbae9afbb140f50541"
+  },
+  {
+    "id": "evt_17009c21-7ac8-4eab-bd74-2a4df13d923a",
+    "workspaceId": "ws_demo",
+    "aggregateType": "tool_definition",
+    "aggregateId": "pc_bitget_demo:withdraw",
+    "eventType": "ToolBlocked",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.728Z",
+    "recordedAt": "2026-06-22T10:46:55.728Z",
+    "actorType": "system",
+    "payload": {
+      "providerConnectionId": "pc_bitget_demo",
+      "toolName": "withdraw",
+      "riskClass": "asset_movement",
+      "manifestHash": "3a2999ecbddfd3a9e744625b23faa91e6bb9a00aa4cf40ebc977c2679a10f4de",
+      "reasonCode": "risk_class_default"
+    },
+    "payloadHash": "8296b19c51a2203abf5f3454593b477009738d35874633f458748a0d682824c1",
+    "eventHash": "094ca8d07bb446e77b438b8abfe95aca0dd785975dd63732b3c3cd5a57423f4e",
+    "previousEventHash": "e6a6d71a24b33968666f9674bb0d7ffc7508f67feabbaad78b479afc1af3689c"
+  },
+  {
+    "id": "evt_675f8e89-067e-4621-a1bc-dd287dc95b5c",
+    "workspaceId": "ws_demo",
+    "aggregateType": "run",
+    "aggregateId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "eventType": "RunCreated",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.731Z",
+    "recordedAt": "2026-06-22T10:46:55.731Z",
+    "actorType": "agent",
+    "payload": {
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "providerConnectionId": "pc_bitget_demo",
+      "createdAt": "2026-06-22T10:46:55.731Z"
+    },
+    "payloadHash": "e9f7e339a3d0cb83c26fa6dee85d0e9986c879fa699af360a757471153c8cd35",
+    "eventHash": "d780a889d4c4e87dcbe1910c57d66ad5ed1c01ad08aee0e2c2dae57139b4f8be",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "094ca8d07bb446e77b438b8abfe95aca0dd785975dd63732b3c3cd5a57423f4e"
+  },
+  {
+    "id": "evt_e0e0701b-830f-4c42-aaf4-acbd19418d16",
+    "workspaceId": "ws_demo",
+    "aggregateType": "run",
+    "aggregateId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "eventType": "RunStarted",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.811Z",
+    "recordedAt": "2026-06-22T10:46:55.811Z",
+    "actorType": "agent",
+    "payload": {
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "startedAt": "2026-06-22T10:46:55.811Z",
+      "agentName": "demo-agent",
+      "intent": "Governed paper-trading demo",
+      "mode": "safe_demo"
+    },
+    "payloadHash": "1777354576ff34d4fa9a22b05d98af7f930d0f63b9db84d7648dd009435186d7",
+    "eventHash": "6f655abf60d89142e479cbb795e38e890f99f9acb9c088a10d3b5122e8722af4",
+    "actorId": "demo-agent",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "d780a889d4c4e87dcbe1910c57d66ad5ed1c01ad08aee0e2c2dae57139b4f8be"
+  },
+  {
+    "id": "evt_665eebc4-5e9d-42dc-bb20-67635debe29b",
+    "workspaceId": "ws_demo",
+    "aggregateType": "decision",
+    "aggregateId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+    "eventType": "DecisionProposed",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.812Z",
+    "recordedAt": "2026-06-22T10:46:55.812Z",
+    "actorType": "agent",
+    "payload": {
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "envelopeVersion": 1,
+      "instrument": "BTCUSDT",
+      "marketType": "spot",
+      "action": "buy",
+      "thesis": "Momentum breakout above the prior range high on rising volume.",
+      "evidenceRefs": [
+        "ev:demo:1"
+      ],
+      "requestedNotionalUsdt": "2500",
+      "decisionHash": "5c30a929122d0cb3ecb30c225a2aa6a525808d648ee1a5396a6869e2905ca766"
+    },
+    "payloadHash": "482cc61416d260eee8272015e18bb640ca1779030c8a15c96caf68ba75a1ad7b",
+    "eventHash": "d73f9c0582ec30d34da68c5a8f24e8989ccf03bfd0e0e00366d595a473209da2",
+    "actorId": "demo-agent",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "6f655abf60d89142e479cbb795e38e890f99f9acb9c088a10d3b5122e8722af4"
+  },
+  {
+    "id": "evt_7cbf0e9f-514a-420b-aa7b-53695851d087",
+    "workspaceId": "ws_demo",
+    "aggregateType": "decision",
+    "aggregateId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+    "eventType": "DecisionValidated",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.812Z",
+    "recordedAt": "2026-06-22T10:46:55.812Z",
+    "actorType": "system",
+    "payload": {
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "validationResult": "valid",
+      "normalizedDecisionRef": "normalized:dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "normalizedDecisionHash": "5c30a929122d0cb3ecb30c225a2aa6a525808d648ee1a5396a6869e2905ca766"
+    },
+    "payloadHash": "6332eed4e439105a68084eb637e0e0d183790e6b8793fc2f3dcfae8013aef8a8",
+    "eventHash": "b5e395a8bac418b8f62696330dce2ae07106cf7a9fb568d1bb65fee63aae94eb",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "d73f9c0582ec30d34da68c5a8f24e8989ccf03bfd0e0e00366d595a473209da2"
+  },
+  {
+    "id": "evt_d377e65e-19bd-47e2-9fb5-84fdf03cd440",
+    "workspaceId": "ws_demo",
+    "aggregateType": "decision",
+    "aggregateId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+    "eventType": "PolicyEvaluationStarted",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.813Z",
+    "recordedAt": "2026-06-22T10:46:55.813Z",
+    "actorType": "system",
+    "payload": {
+      "evaluationId": "eval_9f2bd1c0-d8f7-4a77-8b40-f4da1d06e437",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "policyVersionId": "1",
+      "evaluatorVersion": "traceguard-3e1",
+      "evaluationInputHash": "d1d5f055dfd9ab84aaf3edc522c320978cf2246562e24f41a7bc457beca8af44"
+    },
+    "payloadHash": "f31193bee440af37d330517af43c863686d7414a54d6058691c1c734dcf43e3f",
+    "eventHash": "69244b3b5d47b9930895f657a031372bde67f60e856a64926e340f3eb1888538",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "b5e395a8bac418b8f62696330dce2ae07106cf7a9fb568d1bb65fee63aae94eb"
+  },
+  {
+    "id": "evt_d632d60e-e66d-43e1-889a-f8aad839c74d",
+    "workspaceId": "ws_demo",
+    "aggregateType": "decision",
+    "aggregateId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+    "eventType": "PolicyEvaluated",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.813Z",
+    "recordedAt": "2026-06-22T10:46:55.813Z",
+    "actorType": "system",
+    "payload": {
+      "evaluationId": "eval_9f2bd1c0-d8f7-4a77-8b40-f4da1d06e437",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "policyVersionId": "1",
+      "evaluatorVersion": "traceguard-3e1",
+      "outcome": "require_approval",
+      "matchedRules": [
+        {
+          "ruleId": "approve-large-notional",
+          "outcome": "require_approval",
+          "explanation": "requestedNotionalUsdt gt 1000",
+          "expected": [
+            "1000"
+          ],
+          "actual": [
+            "2500"
+          ]
+        },
+        {
+          "ruleId": "allow-trade-like",
+          "outcome": "allow",
+          "explanation": "toolRiskClass eq trade_like",
+          "expected": [
+            "trade_like"
+          ],
+          "actual": [
+            "trade_like"
+          ]
+        }
+      ],
+      "evaluationOutputHash": "f63eda6c13d791a663734b0845762b698ff99408a33bc95036da6a2ca7c6fa7c"
+    },
+    "payloadHash": "0793a3e53cad8dbe2723c81d1fd4c09e8861495dbb5f07b72e2b50ab99d8c4c0",
+    "eventHash": "ce18a389441e871c11cb7846056aa24372ddb960ec85c0903432ad2978be4181",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "69244b3b5d47b9930895f657a031372bde67f60e856a64926e340f3eb1888538"
+  },
+  {
+    "id": "evt_e256d0c4-4d14-4c3c-871a-30775d5c734b",
+    "workspaceId": "ws_demo",
+    "aggregateType": "approval",
+    "aggregateId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+    "eventType": "ApprovalRequested",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.814Z",
+    "recordedAt": "2026-06-22T10:46:55.814Z",
+    "actorType": "system",
+    "payload": {
+      "approvalId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "policyEvaluationId": "eval_9f2bd1c0-d8f7-4a77-8b40-f4da1d06e437",
+      "actionDigest": "4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "channelOptions": [
+        "web"
+      ],
+      "expiresAt": "2026-06-22T11:01:55.814Z",
+      "summary": {
+        "instrument": "BTCUSDT",
+        "action": "buy",
+        "notionalUsdt": "2500",
+        "policyOutcome": "require_approval"
+      }
+    },
+    "payloadHash": "cb252d1c505b5a8f511d79c59090f2d271edd5c9c47e8a505062fff3d03a0e4c",
+    "eventHash": "18d512cc25aa66ac7a3048ddf2e5c00c6a60f110d8043e36e7e65694379181ed",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "ce18a389441e871c11cb7846056aa24372ddb960ec85c0903432ad2978be4181"
+  },
+  {
+    "id": "evt_af522b0e-3912-4dab-a8c1-f9662f7c640b",
+    "workspaceId": "ws_demo",
+    "aggregateType": "approval",
+    "aggregateId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+    "eventType": "ApprovalApproved",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.815Z",
+    "recordedAt": "2026-06-22T10:46:55.815Z",
+    "actorType": "user",
+    "payload": {
+      "approvalId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "actionDigest": "4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "approvedBy": "ops-desk",
+      "approvalChannel": "web",
+      "approvedAt": "2026-06-22T10:46:55.815Z",
+      "expiresAt": "2026-06-22T11:01:55.815Z"
+    },
+    "payloadHash": "4fc2b2d724500ea4218b9bf24b82f3a22bd904d434ae2f1c151d9adb43e11756",
+    "eventHash": "fcfd30c1fa7e04442e7d09901641bfabf8d30194c327c10a79361cd387f2ac2b",
+    "actorId": "ops-desk",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "18d512cc25aa66ac7a3048ddf2e5c00c6a60f110d8043e36e7e65694379181ed"
+  },
+  {
+    "id": "evt_c3fb4169-9a76-49d6-9795-5f76387ed376",
+    "workspaceId": "ws_demo",
+    "aggregateType": "authorization",
+    "aggregateId": "authz_333cd70c-1b6f-46d4-a4a6-0a43f88c2a33",
+    "eventType": "AuthorizationIssued",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.815Z",
+    "recordedAt": "2026-06-22T10:46:55.815Z",
+    "actorType": "system",
+    "payload": {
+      "authorizationId": "authz_333cd70c-1b6f-46d4-a4a6-0a43f88c2a33",
+      "approvalId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "actionDigest": "4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "expiresAt": "2026-06-22T11:01:55.815Z",
+      "scope": "single_action"
+    },
+    "payloadHash": "36abd87b285c9341e96fb5db7d1a4850cee1f5a224b5181c6eb8801c4d332160",
+    "eventHash": "583766a7cbf858d4dfb56bb8ce030fa16959422dcb3620c921e9159d1f551ad9",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "fcfd30c1fa7e04442e7d09901641bfabf8d30194c327c10a79361cd387f2ac2b"
+  },
+  {
+    "id": "evt_832c21f4-3598-4a8e-9ec1-afd725745e0c",
+    "workspaceId": "ws_demo",
+    "aggregateType": "execution",
+    "aggregateId": "exec_78008634-06f1-470a-8697-3c85f83b4c45",
+    "eventType": "ExecutionRequested",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.818Z",
+    "recordedAt": "2026-06-22T10:46:55.818Z",
+    "actorType": "system",
+    "payload": {
+      "executionId": "exec_78008634-06f1-470a-8697-3c85f83b4c45",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "authorizationId": "authz_333cd70c-1b6f-46d4-a4a6-0a43f88c2a33",
+      "adapterType": "bitget_live",
+      "actionDigest": "4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "idempotencyKey": "execution:ws_demo:run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52:dec_dbd972b0-cf51-48d7-a705-da66afab1c29:4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "requestRef": "execution:ws_demo:run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52:dec_dbd972b0-cf51-48d7-a705-da66afab1c29:4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "requestHash": "e6ed58424ec060fb6225abaf797dd5b56c7598f6b84c55db216d86e2c652bdf6"
+    },
+    "payloadHash": "ab80e60561730aee672bdfc5c5f54e1eaac6ff44eba68832289805e162bfb029",
+    "eventHash": "4a3f89e53e0daf6bec332cb6d7846405c0fb760659b1e98996f8638ace9fb8d9",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "583766a7cbf858d4dfb56bb8ce030fa16959422dcb3620c921e9159d1f551ad9"
+  },
+  {
+    "id": "evt_4940dd54-4d6c-42ca-a3be-2cd82b69fd4f",
+    "workspaceId": "ws_demo",
+    "aggregateType": "authorization",
+    "aggregateId": "authz_333cd70c-1b6f-46d4-a4a6-0a43f88c2a33",
+    "eventType": "AuthorizationConsumed",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.818Z",
+    "recordedAt": "2026-06-22T10:46:55.818Z",
+    "actorType": "system",
+    "payload": {
+      "authorizationId": "authz_333cd70c-1b6f-46d4-a4a6-0a43f88c2a33",
+      "approvalId": "appr_0c66774a-db61-4ab5-9ce4-10729cb7c1ac",
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "decisionId": "dec_dbd972b0-cf51-48d7-a705-da66afab1c29",
+      "actionDigest": "4a8d08985bf9a270fbd627e965c59356014415b15372d5e6d2b4c2154c516f87",
+      "consumedAt": "2026-06-22T10:46:55.817Z",
+      "executionId": "exec_78008634-06f1-470a-8697-3c85f83b4c45"
+    },
+    "payloadHash": "ed6c00820fbe03a61aa603773d938f145fe7dfaac12218694579507f8fc42e49",
+    "eventHash": "d02fc72028a09ab1cad57de971109cc637becd62e12e1748090fcb4c4a8d41d6",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "4a3f89e53e0daf6bec332cb6d7846405c0fb760659b1e98996f8638ace9fb8d9"
+  },
+  {
+    "id": "evt_b7e39c83-afd9-4c58-810b-177d9c425e28",
+    "workspaceId": "ws_demo",
+    "aggregateType": "run",
+    "aggregateId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "eventType": "RunFailed",
+    "eventVersion": 1,
+    "schemaVersion": 1,
+    "occurredAt": "2026-06-22T10:46:55.823Z",
+    "recordedAt": "2026-06-22T10:46:55.823Z",
+    "actorType": "system",
+    "payload": {
+      "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+      "failedAt": "2026-06-22T10:46:55.823Z",
+      "reasonCode": "orchestrator_error"
+    },
+    "payloadHash": "98befcd81f197e0ad756bdfb7b4a2a70d04e485a9b8eb833ee083211ed4a3d7b",
+    "eventHash": "ba25e177cc40d739b487ee349e16db842fdd24e207a7fce6b00122d554309372",
+    "runId": "run_a823b88b-4bdd-47a9-948a-fc0cd1a02c52",
+    "previousEventHash": "d02fc72028a09ab1cad57de971109cc637becd62e12e1748090fcb4c4a8d41d6"
+  }
+]
